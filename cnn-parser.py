@@ -91,21 +91,20 @@ def graph_builder(ud, dependency_dict, dependency_file, vocab_dict, vocab_file, 
 
 if __name__ == '__main__':
     # Initialize
-    if not os.path.exists("/home/kinga-gemes/stanfordnlp_resources/en_ewt_models"):
-        stanfordnlp.download('en')
+    stanfordnlp.download('en')
     nlp = stanfordnlp.Pipeline()
 
     dep_vocab = {}
     word_vocab = {}
 
-    sent_json = open('sentences.jsonl', 'w')
-    high_json = open('highlights.jsonl', 'w')
-    high_s_json = open('highlight_sentences.jsonl', 'w')
-    deps = open('dep_vocab.jsonl', 'w')
-    word = open('word_vocab.jsonl', 'w')
+    sent_json = open('./data/sentences.jsonl', 'w')
+    high_json = open('./data/highlights.jsonl', 'w')
+    high_s_json = open('./data/highlight_sentences.jsonl', 'w')
+    deps = open('./data/dep_vocab.jsonl', 'w')
+    word = open('./data/word_vocab.jsonl', 'w')
 
     # Process and save
-    with open('cnn-dm_matched.jsonl') as cnn_dm:
+    with open('./data/cnn-dm_matched.jsonl') as cnn_dm:
         line = cnn_dm.readline().strip()
         i = 0
         # while line is not None and line != '':
@@ -134,9 +133,9 @@ if __name__ == '__main__':
     deps.close()
     word.close()
 
-    with open('dep_vocab.json', 'w') as dep_json:
+    with open('./data/dep_vocab.json', 'w') as dep_json:
         dep_json.write(json.dumps(dep_vocab))
 
-    with open('word_vocab.json', 'w') as word_json:
+    with open('./data/word_vocab.json', 'w') as word_json:
         word_json.write(json.dumps(word_vocab))
 
