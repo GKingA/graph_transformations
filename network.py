@@ -197,5 +197,5 @@ if __name__ == '__main__':
                                                              global_output_size=1)
 
     train_model(encode_process_decode_model, sentence_graphs_tuple_train, highlighted_graphs_tuple_train,
-                highlighted_graphs_tuple_train, highlighted_graphs_tuple_test)
+                sentence_graphs_tuple_test, highlighted_graphs_tuple_test)
 
