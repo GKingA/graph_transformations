@@ -20,9 +20,9 @@ def process_line(json_dict, keep_features, existence_as_vector):
                                       dtype=np.float32)
     else:
         if existence_as_vector:
-            json_dict['nodes'] = np.array([[0, 1] if nodes[-1] == 0 else [1, 0] for nodes in
+            json_dict['nodes'] = np.array([[1, 0] if nodes[-1] == 0 else [0, 1] for nodes in
                                            json_dict['nodes']], dtype=np.float32)
-            json_dict['edges'] = np.array([[0, 1] if edges[-1] == 0 else [1, 0] for edges in
+            json_dict['edges'] = np.array([[1, 0] if edges[-1] == 0 else [0, 1] for edges in
                                            json_dict['edges']], dtype=np.float32)
         else:
             json_dict['nodes'] = np.array([[nodes[-1]] for nodes in json_dict['nodes']], dtype=np.float32)

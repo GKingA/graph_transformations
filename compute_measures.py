@@ -81,3 +81,73 @@ def compute_accuracy_ratio(target, output, is_categorical=False):
         corr_ += c[0]
         all_ += c[1]
     return corr_ / all_, solved / len(target)
+
+
+def compute_one_tp_tn_fp_fn(results, key, value, expected, calculated):
+    """
+    Calculates the True Positive, True Negative, False Positive and False Negative values for the given label.
+    :param results: Dictionary to contain the calculated values. This will be updated.
+    :param key: The label we want to update
+    :param value: The value of the label
+    :param expected: The expected values in the graph
+    :param calculated: The calculated values in the graph
+    """
+    results[key]["tp"] += len([i for i, j in zip(expected, calculated) if i == value and i == j])
+    results[key]["tn"] += len([i for i, j in zip(expected, calculated) if i != value and i == j])
+    results[key]["fp"] += len([i for i, j in zip(expected, calculated) if i == value and i != j])
+    results[key]["fn"] += len([i for i, j in zip(expected, calculated) if i != value and i != j])
+
+
+def compute_tp_tn_fp_fn(target, output, types):
+    """
+    Calculates the True Positive, True Negative, False Positive and False Negative values in the batch.
+    :param target: The expected values in the graph
+    :param output: The calculated values in the graph
+    :param types: The labels in the graph. (eq. edges0 means the edges with value 0)
+    """
+    results = {type_: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for type_ in types}
+    tdds = utils_np.graphs_tuple_to_data_dicts(target)
+    odds = utils_np.graphs_tuple_to_data_dicts(output)
+    for td, od in zip(tdds, odds):
+        for type_ in types:
+            compute_one_tp_tn_fp_fn(results, type_, int(type_[-1]),
+                                    np.argmax(td[type_[:-1]], axis=-1), np.argmax(od[type_[:-1]], axis=-1))
+    return results
+
+
+def add_tp_tn_fp_fn(to_update, batch_result):
+    """
+    Adds the batch results to the previous results in place.
+    :param to_update: The dictionary containing the sum of the previous values. This will be updated.
+    :param batch_result: The dictionary containing the results on one batch.
+    """
+    for key in to_update:
+        for key2 in to_update[key]:
+            to_update[key][key2] += batch_result[key][key2]
+
+
+def compute_precision_recall_f1(tp_tn_fp_fn):
+    """
+    Computes the precision, recall, and f1 score for each label given the dictionary containing the
+    True Positive, True Negative, False Positive and False Negative values
+    :param tp_tn_fp_fn: dictionary with the True Positive, True Negative, False Positive and False Negative values
+           for each type
+    :return: dictionary containing the precision, recall, and f1 score for each label
+    """
+    results = {}
+    for key in tp_tn_fp_fn:
+        results[key] = {}
+        if tp_tn_fp_fn[key]["tp"] + tp_tn_fp_fn[key]["fn"] == 0:
+            results[key]["precision"] = 0
+        else:
+            results[key]["precision"] = tp_tn_fp_fn[key]["tp"] / (tp_tn_fp_fn[key]["tp"] + tp_tn_fp_fn[key]["fn"])
+        if tp_tn_fp_fn[key]["tp"] + tp_tn_fp_fn[key]["fp"] == 0:
+            results[key]["recall"] = 0
+        else:
+            results[key]["recall"] = tp_tn_fp_fn[key]["tp"] / (tp_tn_fp_fn[key]["tp"] + tp_tn_fp_fn[key]["fp"])
+        if results[key]["precision"] + results[key]["recall"] == 0:
+            results[key]["f1"] = 0
+        else:
+            results[key]["f1"] = 2 * (results[key]["precision"] * results[key]["recall"]) / \
+                                 (results[key]["precision"] + results[key]["recall"])
+    return results

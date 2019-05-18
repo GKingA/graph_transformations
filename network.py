@@ -5,7 +5,7 @@ import tensorflow as tf
 from graph_transformations.models.model_with_attention import GraphAttention
 from graph_transformations.graph_losses import softmax_loss
 from graph_transformations.graph_file_handling import get_first_batch_graph_dict, generate_graph, save_predicted_graphs
-from graph_transformations.compute_measures import compute_accuracy
+from graph_transformations.compute_measures import compute_accuracy, compute_tp_tn_fp_fn, add_tp_tn_fp_fn, compute_precision_recall_f1
 
 
 def generate_placeholder(file, batch_size, keep_features):
@@ -112,6 +112,8 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
+        last_loss = 1000.0
+        types = ["edges0", "edges1", "nodes0", "nodes1"]
         for iteration in range(1, epochs + 1):
 
             if iteration > 3:
@@ -122,6 +124,8 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                 print("2nd epoch")
             elif iteration == 1:
                 print("1st epoch")
+
+            tp_tn_fp_fn = {type_: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for type_ in types}
 
             losses = []
             corrects = []
@@ -139,6 +143,7 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                     "outputs": output_train
                 }, feed_dict=feed_dict)
                 correct_train, solved_train = compute_accuracy(train_values["targets"], train_values["outputs"][-1])
+                compute_tp_tn_fp_fn(train_values["targets"], train_values["outputs"][-1], types)
                 print("Train loss: {}\tCorrect train parts: {}\tCorrectly solved train graphs: {}".format(
                     train_values["loss"], correct_train, solved_train))
                 if step < steps_per_epoch:
@@ -155,6 +160,7 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                     "outputs": output_test,
                 }, feed_dict=feed_dict)
                 correct_test, solved_test = compute_accuracy(test_values["targets"], test_values["outputs"][-1])
+                add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(test_values["targets"], test_values["outputs"][-1], types))
                 losses.append(test_values["loss"])
                 corrects.append(correct_test)
                 solved.append(solved_test)
@@ -162,9 +168,18 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                     step += 1
                 else:
                     break
+            current_loss = sum(losses)/validation_steps_per_epoch
             print("Test loss: {}\tCorrect test parts: {}\tCorrectly solved test graphs: {}".format(
-                sum(losses)/validation_steps_per_epoch, sum(corrects)/validation_steps_per_epoch,
+                current_loss, sum(corrects)/validation_steps_per_epoch,
                 sum(solved)/validation_steps_per_epoch))
+            if current_loss < last_loss:
+                last_loss = current_loss
+            else:
+                break
+            report = compute_precision_recall_f1(tp_tn_fp_fn)
+            print("\t\tprecision\trecall\tf1")
+            for key in report:
+                print("{}\t{}\t{}\t{}".format(key, report[key]["precision"], report[key]["recall"], report[key]["f1"]))
         save_predicted_graphs(output_save_path, train_values["inputs"], train_values["outputs"][-1],
                               test_values["inputs"], test_values["outputs"][-1])
 

@@ -14,18 +14,23 @@ def highlight_to_sentences(highlight, article):
     """
     data_dict = copy.deepcopy(article)
     node_feature_size = len(article["nodes"][0])
+    edge_feature_size = len(article["edges"][0])
     for i, (sender, receiver, edge) in enumerate(zip(article["senders"], article["receivers"], article["edges"])):
         for (h_sender, h_receiver, h_edge) in zip(highlight["senders"], highlight["receivers"], highlight["edges"]):
             if edge == h_edge and article['nodes'][sender] == highlight['nodes'][h_sender] and \
                                   article['nodes'][receiver] == highlight['nodes'][h_receiver]:
-                if len(data_dict['edges']) < 2:
+                if len(data_dict['edges'][i]) == edge_feature_size:
                     data_dict['edges'][i].append(1.0)
                 if len(data_dict['nodes'][sender]) == node_feature_size:
                     data_dict['nodes'][sender].append(1.0)
                 if len(data_dict['nodes'][receiver]) == node_feature_size:
                     data_dict['nodes'][receiver].append(1.0)
-        if len(data_dict['edges'][i]) < 2:
+        if len(data_dict['edges'][i]) == edge_feature_size:
             data_dict['edges'][i].append(0.0)
+    for i, node in enumerate(article["nodes"]):
+        for h_node in highlight["nodes"]:
+            if node == h_node and len(data_dict['nodes'][i]) == node_feature_size:
+                    data_dict['nodes'][i].append(1.0)
     for i, n in enumerate(data_dict['nodes']):
         if len(n) == node_feature_size:
             data_dict['nodes'][i].append(0.0)
@@ -140,7 +145,7 @@ if __name__ == '__main__':
             high_s_json.write('\n')
             line = cnn_dm.readline().strip()
             i += 1
-            print(i)
+            print("{} article processed".format(i))
 
     sent_json.close()
     high_json.close()

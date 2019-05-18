@@ -1,3 +1,6 @@
+import json
+
+
 def train_test_split(file_path, train_path, test_path, ratio_in_hundred):
     """
     Splits the input file into training ant test sets
@@ -25,7 +28,44 @@ def train_test_split(file_path, train_path, test_path, ratio_in_hundred):
         test.close()
 
 
+def update(input_path, length):
+    print("Correction")
+    data = []
+    with open(input_path) as input_file:
+        for i in range(length):
+            data.append(input_file.readline())
+    with open(input_path, "w") as input_file:
+        print("".join(data), file=input_file)
+
+
+def test_split(input_path, output_path):
+    print(input_path)
+    with open(input_path) as input_file:
+        with open(output_path) as output_file:
+            input_ = input_file.readline()
+            output_ = output_file.readline()
+            i = 0
+            while input_ != '' and input_ is not None and output_ != '' and output_ is not None:
+                inp = json.loads(input_)
+                out = json.loads(output_)
+                if len(inp["edges"]) == len(out["edges"]) and len(inp["nodes"]) == len(out["nodes"]):
+                    print(i)
+                else:
+                    print("ERROR on line {}".format(i + 1))
+                    print(len(inp["edges"]), len(out["edges"]), len(inp["nodes"]), len(out["nodes"]))
+                input_ = input_file.readline()
+                output_ = output_file.readline()
+                i += 1
+            try:
+                input_file.readline()
+                update(input_path, i)
+            except:
+                print("File lengths are good")
+
+
 if __name__ == "__main__":
     train_test_split("./data/sentences.jsonl", "./data/sentences_train.jsonl", "./data/sentences_test.jsonl", 80)
     train_test_split("./data/highlight_sentences.jsonl", "./data/highlight_sentences_train.jsonl",
                      "./data/highlight_sentences_test.jsonl", 80)
+    test_split("./data/sentences_train.jsonl", "./data/highlight_sentences_train.jsonl")
+    test_split("./data/sentences_test.jsonl", "./data/highlight_sentences_test.jsonl")
