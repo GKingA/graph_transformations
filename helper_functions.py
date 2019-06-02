@@ -50,14 +50,29 @@ def print_graphs_tuple(graphs_tuple):
 
 def visualize_graph(graph_dict):
     """
-    Creates a visualization of the given graph
+    Creates a visualization of the given graph using only its 1 valued nodes and edges
     :param graph_dict: An instance of a graph dictionary
     """
-    graph = {"edges": [], "senders": [], "receivers": [], "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] == 1.], "globals": [1.0]}
+    graph = {"edges": [], "senders": [], "receivers": [],
+             "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] == 1.], "globals": [1.0]}
+    print(graph["nodes"])
     for edge, sender, receiver in zip(graph_dict["edges"], graph_dict["senders"], graph_dict["receivers"]):
         if edge[-1] == 1. and graph_dict["nodes"][sender][-1] == 1. and graph_dict["nodes"][receiver][-1] == 1.:
             graph["edges"].append(edge[:-1])
-            graph["senders"].append(graph["nodes"].index(graph_dict["nodes"][sender]))
-            graph["receivers"].append(graph["nodes"].index(graph_dict["nodes"][receiver]))
+            graph["senders"].append(graph["nodes"].index(graph_dict["nodes"][sender][:-1]))
+            graph["receivers"].append(graph["nodes"].index(graph_dict["nodes"][receiver][:-1]))
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph]))
+    plt.figure(1, figsize=(25, 25))
     nx.draw_networkx(graphs_nx[0])
+    plt.show()
+
+
+def visualize_original_graph(graph_dict):
+    """
+    Creates a visualization of the given graph
+    :param graph_dict: An instance of a graph dictionary
+    """
+    graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
+    plt.figure(1, figsize=(25, 25))
+    nx.draw_networkx(graphs_nx[0])
+    plt.show()
