@@ -29,6 +29,11 @@ def train_test_split(file_path, train_path, test_path, ratio_in_hundred):
 
 
 def update(input_path, length):
+    """
+    Update the file so it contains only the first length amount of lines
+    :param input_path: The file to modify
+    :param length: The amount of lines to leave
+    """
     print("Correction")
     data = []
     with open(input_path) as input_file:
@@ -39,15 +44,24 @@ def update(input_path, length):
 
 
 def test_split(input_path, output_path):
+    """
+    Testing whether the split was correct.
+    :param input_path: The path for the file containing the input graphs.
+    :param output_path: The path for the file containing the input graphs.
+    """
     print(input_path)
     with open(input_path) as input_file:
         with open(output_path) as output_file:
-            input_ = input_file.readline()
-            output_ = output_file.readline()
+            input_ = input_file.readline().strip()
+            output_ = output_file.readline().strip()
             i = 0
-            while input_ != '' and input_ is not None and output_ != '' and output_ is not None:
-                inp = json.loads(input_)
-                out = json.loads(output_)
+            while input_ != '' and input_ != '\n' and input_ is not None and output_ != '' and output_ != '\n' and output_ is not None:
+                try:
+                    inp = json.loads(input_)
+                    out = json.loads(output_)
+                except:
+                    print(input_)
+                    print(output_)
                 if len(inp["edges"]) == len(out["edges"]) and len(inp["nodes"]) == len(out["nodes"]):
                     print(i)
                 else:
@@ -64,8 +78,8 @@ def test_split(input_path, output_path):
 
 
 if __name__ == "__main__":
-    train_test_split("./data/sentences.jsonl", "./data/sentences_train.jsonl", "./data/sentences_test.jsonl", 80)
-    train_test_split("./data/highlight_sentences.jsonl", "./data/highlight_sentences_train.jsonl",
-                     "./data/highlight_sentences_test.jsonl", 80)
-    test_split("./data/sentences_train.jsonl", "./data/highlight_sentences_train.jsonl")
-    test_split("./data/sentences_test.jsonl", "./data/highlight_sentences_test.jsonl")
+    train_test_split("./data/sentences2.jsonl", "./data/sentences_train2.jsonl", "./data/sentences_test2.jsonl", 80)
+    train_test_split("./data/highlight_sentences2.jsonl", "./data/highlight_sentences_train2.jsonl",
+                     "./data/highlight_sentences_test2.jsonl", 80)
+    test_split("./data/sentences_train2.jsonl", "./data/highlight_sentences_train2.jsonl")
+    test_split("./data/sentences_test2.jsonl", "./data/highlight_sentences_test2.jsonl")
