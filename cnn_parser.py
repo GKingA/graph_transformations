@@ -95,7 +95,7 @@ def graph_builder(ud, dependency_dict, dependency_file, vocab_dict, vocab_file, 
 
             senders.append(nodes.index(from_node_features))
             receivers.append(nodes.index(to_node_features))
-            edges.append([dep_vocab[edge]])
+            edges.append([dependency_dict[edge]])
 
     data_dict = {
         "globals": [1.0],
@@ -107,7 +107,11 @@ def graph_builder(ud, dependency_dict, dependency_file, vocab_dict, vocab_file, 
     return data_dict
 
 
-if __name__ == '__main__':
+def main():
+    """
+    The main function. It loads the stanfornlp pipeline and processes the lines in the input path with it and uses these
+    results to build the graphs.
+    """
     # Initialize
     if not os.path.exists("/home/kinga-gemes/stanfordnlp_resources/en_ewt_models"):
         stanfordnlp.download('en')
@@ -130,6 +134,8 @@ if __name__ == '__main__':
         i = 0
         while line is not None and line != '':
             m = json.loads(line)
+            if m['sentences'] == '' or m['highlights'] == '':
+                continue
             highlights = nlp(m['highlights'])
             sentences = nlp(m['sentences'])
             highlight_dict = graph_builder(highlights, dep_vocab, deps, word_vocab, word, pos_vocab, pos)
@@ -161,3 +167,7 @@ if __name__ == '__main__':
 
     with open('./data/pos_vocab.json', 'w') as word_json:
         word_json.write(json.dumps(pos_vocab))
+
+
+if __name__ == '__main__':
+    main()
