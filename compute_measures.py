@@ -28,6 +28,30 @@ def compute_accuracy(target, output):
     return correct, solved
 
 
+def compute_accuracy_on_nodes(target, output):
+    """
+    Computes the accuracy ratio on nodes, and also on the whole correctly predicted graph (its nodes) itself
+    :param target: The target graphs
+    :param output: The output graphs
+    :return: The ratio of correctly predicted nodes and edges, and the correctly predicted full graphs
+    """
+    tdds = utils_np.graphs_tuple_to_data_dicts(target)
+    odds = utils_np.graphs_tuple_to_data_dicts(output)
+    cs = []
+    ss = []
+    for td, od in zip(tdds, odds):
+        xn = np.argmax(td["nodes"], axis=-1)
+        yn = np.argmax(od["nodes"], axis=-1)
+        c = [xn == yn]
+        c = np.concatenate(c, axis=0)
+        s = np.all(c)
+        cs.append(c)
+        ss.append(s)
+    correct = np.mean(np.concatenate(cs, axis=0))
+    solved = np.mean(np.stack(ss))
+    return correct, solved
+
+
 def compute_accuracy_ratio(target, output, is_categorical=False):
     """
     Computes the accuracy ratio on nodes and edges, and also on the whole correctly predicted graph itself
@@ -92,10 +116,15 @@ def compute_one_tp_tn_fp_fn(results, key, value, expected, calculated):
     :param expected: The expected values in the graph
     :param calculated: The calculated values in the graph
     """
-    results[key]["tp"] += len([i for i, j in zip(expected, calculated) if i == value and i == j])
-    results[key]["tn"] += len([i for i, j in zip(expected, calculated) if i != value and i == j])
-    results[key]["fp"] += len([i for i, j in zip(expected, calculated) if i == value and i != j])
-    results[key]["fn"] += len([i for i, j in zip(expected, calculated) if i != value and i != j])
+    res = {key: {}}
+    res[key]["tp"] = len([i for i, j in zip(expected, calculated) if i == value and i == j])
+    res[key]["tn"] = len([i for i, j in zip(expected, calculated) if i != value and i == j])
+    res[key]["fp"] = len([i for i, j in zip(expected, calculated) if i == value and i != j])
+    res[key]["fn"] = len([i for i, j in zip(expected, calculated) if i != value and i != j])
+    f_score = compute_precision_recall_f1(res)
+    print("{}\t{}\t{}\t{}".format(key, f_score[key]["precision"], f_score[key]["recall"], f_score[key]["f1"]))
+    for key2 in results[key]:
+        results[key][key2] += res[key][key2]
 
 
 def compute_tp_tn_fp_fn(target, output, types):
@@ -109,6 +138,7 @@ def compute_tp_tn_fp_fn(target, output, types):
     tdds = utils_np.graphs_tuple_to_data_dicts(target)
     odds = utils_np.graphs_tuple_to_data_dicts(output)
     for td, od in zip(tdds, odds):
+        print("\tprecision\trecall\tf1")
         for type_ in types:
             compute_one_tp_tn_fp_fn(results, type_, int(type_[-1]),
                                     np.argmax(td[type_[:-1]], axis=-1), np.argmax(od[type_[:-1]], axis=-1))

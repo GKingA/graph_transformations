@@ -1,3 +1,4 @@
+import tensorflow as tf
 from tensorflow._api.v1.losses import mean_pairwise_squared_error as pairwise_mse
 from tensorflow._api.v1.losses import sigmoid_cross_entropy, softmax_cross_entropy
 
@@ -35,4 +36,18 @@ def softmax_loss(target, outputs):
     """
     loss_ = [softmax_cross_entropy(target.nodes, output.nodes) + softmax_cross_entropy(target.edges, output.edges)
              for output in outputs]
+    return loss_
+
+
+def softmax_loss_on_nodes(target, outputs):
+    """
+    Calculates the categorical cross entropy loss on nodes
+    :param target: The target graph
+    :param outputs: List of output graphs
+    :return: It returns the calculated loss
+    """
+    class_weights = tf.constant([1.0, 2.0])
+    indices = tf.map_fn(lambda node: tf.argmax(node), target.nodes, dtype=tf.int64)
+    weights = tf.gather(class_weights, tf.cast(indices, tf.int64))
+    loss_ = [softmax_cross_entropy(target.nodes, output.nodes, weights=weights) for output in outputs]
     return loss_

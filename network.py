@@ -3,9 +3,10 @@ from graph_nets.demos.models import EncodeProcessDecode
 import tensorflow as tf
 
 from graph_transformations.models.model_with_attention import GraphAttention
-from graph_transformations.graph_losses import softmax_loss
+from graph_transformations.graph_losses import softmax_loss, softmax_loss_on_nodes
 from graph_transformations.graph_file_handling import get_first_batch_graph_dict, generate_graph, save_predicted_graphs
-from graph_transformations.compute_measures import compute_accuracy, compute_tp_tn_fp_fn, add_tp_tn_fp_fn, compute_precision_recall_f1
+from graph_transformations.compute_measures import compute_accuracy, compute_accuracy_on_nodes,\
+                                                   compute_tp_tn_fp_fn, add_tp_tn_fp_fn, compute_precision_recall_f1
 
 
 def generate_placeholder(file, batch_size, keep_features):
@@ -72,7 +73,7 @@ def train_model(model, epochs, inputs_train, targets_train, inputs_test, targets
 
 def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps_per_epoch,
                     inputs_train_file, outputs_train_file,
-                    inputs_test_file, outputs_test_file, output_save_path):
+                    inputs_test_file, outputs_test_file, output_save_path, use_edges=False):
     """
     Trains the model given as the parameter using a data generator
     :param model: The model to train
@@ -85,6 +86,7 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
     :param inputs_test_file: The path of the input file used for testing
     :param outputs_test_file: The path of the target file used for testing
     :param output_save_path: The path where the final output graphs shall be saved
+    :param use_edges: Whether or not to train on the edges as well as the nodes
     :return:
     """
 
@@ -101,10 +103,12 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
     output_train = model(input_train_ph, 1)
     output_test = model(input_test_ph, 1)
 
-    loss_train = softmax_loss(target_train_ph, output_train)
+    loss_train = softmax_loss(target_train_ph, output_train) if use_edges else \
+        softmax_loss_on_nodes(target_train_ph, output_train)
     loss_train = sum(loss_train)
 
-    loss_test = softmax_loss(target_test_ph, output_test)
+    loss_test = softmax_loss(target_test_ph, output_test) if use_edges else\
+        softmax_loss_on_nodes(target_test_ph, output_test)
     loss_test = loss_test[-1]
     learning_rate = 1e-3
     optimizer = tf.train.AdamOptimizer(learning_rate)
@@ -113,7 +117,7 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         last_loss = 1000.0
-        types = ["edges0", "edges1", "nodes0", "nodes1"]
+        types = ["edges0", "edges1", "nodes0", "nodes1"] if use_edges else ["nodes0", "nodes1"]
         for iteration in range(1, epochs + 1):
 
             if iteration > 3:
@@ -142,8 +146,8 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                     "loss": loss_train,
                     "outputs": output_train
                 }, feed_dict=feed_dict)
-                correct_train, solved_train = compute_accuracy(train_values["targets"], train_values["outputs"][-1])
-                compute_tp_tn_fp_fn(train_values["targets"], train_values["outputs"][-1], types)
+                correct_train, solved_train = compute_accuracy(train_values["targets"], train_values["outputs"][-1]) \
+                    if use_edges else compute_accuracy_on_nodes(train_values["targets"], train_values["outputs"][-1])
                 print("Train loss: {}\tCorrect train parts: {}\tCorrectly solved train graphs: {}".format(
                     train_values["loss"], correct_train, solved_train))
                 if step < steps_per_epoch:
@@ -159,8 +163,10 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
                     "loss": loss_test,
                     "outputs": output_test,
                 }, feed_dict=feed_dict)
-                correct_test, solved_test = compute_accuracy(test_values["targets"], test_values["outputs"][-1])
-                add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(test_values["targets"], test_values["outputs"][-1], types))
+                correct_test, solved_test = compute_accuracy(test_values["targets"], test_values["outputs"][-1]) \
+                    if use_edges else compute_accuracy_on_nodes(test_values["targets"], test_values["outputs"][-1])
+                add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(test_values["targets"], test_values["outputs"][-1],
+                                                                 types))
                 losses.append(test_values["loss"])
                 corrects.append(correct_test)
                 solved.append(solved_test)
@@ -191,13 +197,13 @@ if __name__ == '__main__':
     encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
     # graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
 
-    epochs = 10000
-    batch_size = 32
+    epochs_ = 10000
+    batch_size_ = 32
 
-    training_steps = int(len(open('graph_transformations/data/sentences_train.jsonl').read().split('\n')) / batch_size)
-    validation_steps = int(len(open('graph_transformations/data/sentences_test.jsonl').read().split('\n')) / batch_size)
+    training_steps = int(len(open('graph_transformations/data/sentences_train.jsonl').read().split('\n')) / batch_size_)
+    validation_steps = int(len(open('graph_transformations/data/sentences_test.jsonl').read().split('\n')) / batch_size_)
 
-    train_generator(encode_process_decode_model, epochs, batch_size, training_steps, validation_steps,
+    train_generator(encode_process_decode_model, epochs_, batch_size_, training_steps, validation_steps,
                     'graph_transformations/data/sentences_train.jsonl',
                     'graph_transformations/data/highlight_sentences_train.jsonl',
                     'graph_transformations/data/sentences_test.jsonl',
