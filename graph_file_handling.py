@@ -14,10 +14,10 @@ def process_line(json_dict, keep_features, existence_as_vector):
     :return: Updated json_dict
     """
     if keep_features:
-        json_dict['nodes'] = np.array([[float(i) for i in nodes] for nodes in json_dict['nodes']],
-                                      dtype=np.float32)
-        json_dict['edges'] = np.array([[float(i) for i in edges] for edges in json_dict['edges']],
-                                      dtype=np.float32)
+        json_dict['nodes'] = np.array([[i for i in nodes] for nodes in json_dict['nodes']],
+                                      dtype=np.str)
+        json_dict['edges'] = np.array([[i for i in edges] for edges in json_dict['edges']],
+                                      dtype=np.str)
     else:
         if existence_as_vector:
             json_dict['nodes'] = np.array([[1, 0] if nodes[-1] == 0 else [0, 1] for nodes in

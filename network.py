@@ -73,7 +73,7 @@ def train_model(model, epochs, inputs_train, targets_train, inputs_test, targets
 
 def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps_per_epoch,
                     inputs_train_file, outputs_train_file,
-                    inputs_test_file, outputs_test_file, output_save_path, use_edges=False):
+                    inputs_test_file, outputs_test_file, output_save_path, use_edges=True):
     """
     Trains the model given as the parameter using a data generator
     :param model: The model to train
@@ -107,7 +107,7 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
         softmax_loss_on_nodes(target_train_ph, output_train)
     loss_train = sum(loss_train)
 
-    loss_test = softmax_loss(target_test_ph, output_test) if use_edges else\
+    loss_test = softmax_loss(target_test_ph, output_test) if use_edges else \
         softmax_loss_on_nodes(target_test_ph, output_test)
     loss_test = loss_test[-1]
     learning_rate = 1e-3
@@ -194,19 +194,19 @@ if __name__ == '__main__':
     tf.reset_default_graph()
     num_processing_steps = 10
 
-    encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
-    # graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
+    # encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
+    graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
 
     epochs_ = 10000
     batch_size_ = 32
 
-    training_steps = int(len(open('graph_transformations/data/sentences_train.jsonl').read().split('\n')) / batch_size_)
-    validation_steps = int(len(open('graph_transformations/data/sentences_test.jsonl').read().split('\n')) / batch_size_)
+    training_steps = int(len(open('./data/sentences_train2.jsonl').read().split('\n')) / batch_size_)
+    validation_steps = int(len(open('./data/sentences_test2.jsonl').read().split('\n')) / batch_size_)
 
-    train_generator(encode_process_decode_model, epochs_, batch_size_, training_steps, validation_steps,
-                    'graph_transformations/data/sentences_train.jsonl',
-                    'graph_transformations/data/highlight_sentences_train.jsonl',
-                    'graph_transformations/data/sentences_test.jsonl',
-                    'graph_transformations/data/highlight_sentences_test.jsonl',
-                    'graph_transformations/data/predictions.jsonl')
+    train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
+                    './data/sentences_train2.jsonl',
+                    './data/highlight_sentences_train2.jsonl',
+                    './data/sentences_test2.jsonl',
+                    './data/highlight_sentences_test2.jsonl',
+                    './data/predictions.jsonl')
 

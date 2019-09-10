@@ -78,8 +78,8 @@ def test_split(input_path, output_path):
 
 
 if __name__ == "__main__":
-    train_test_split("./data/sentences2.jsonl", "./data/sentences_train2.jsonl", "./data/sentences_test2.jsonl", 80)
-    train_test_split("./data/highlight_sentences2.jsonl", "./data/highlight_sentences_train2.jsonl",
+    train_test_split("./data/sentences0.jsonl", "./data/sentences_train2.jsonl", "./data/sentences_test2.jsonl", 80)
+    train_test_split("./data/highlights0.jsonl", "./data/highlight_sentences_train2.jsonl",
                      "./data/highlight_sentences_test2.jsonl", 80)
     test_split("./data/sentences_train2.jsonl", "./data/highlight_sentences_train2.jsonl")
     test_split("./data/sentences_test2.jsonl", "./data/highlight_sentences_test2.jsonl")

@@ -1,7 +1,6 @@
 import json
 import stanfordnlp
 import os
-import copy
 
 
 def feature_appender(nodes, edges, senders, receivers, from_node_features, to_node_features, edge, is_summary=False):
@@ -51,8 +50,8 @@ def feature_appender(nodes, edges, senders, receivers, from_node_features, to_no
     edges.append(edge)
 
 
-def article_graph_builder(uds, best_ids, dependency_dict, dependency_file, vocab_dict, vocab_file, pos_dict, pos_file,
-                          wo_index=True):
+def article_graph_builder(uds, best_ids, dependency_dict=None, dependency_file=None, vocab_dict=None, vocab_file=None,
+                          pos_dict=None, pos_file=None, wo_index=True):
     """
     This function is used to build a graph dictionary for the article and the summary from the parsed UD.
     :param uds: List of universal dependency graphs in stanfordnlp format
@@ -75,48 +74,66 @@ def article_graph_builder(uds, best_ids, dependency_dict, dependency_file, vocab
     summary_senders = []
     summary_receivers = []
     for id, ud in enumerate(uds):
-        for s in ud.sentences:
-            for dep in s.dependencies:
-                from_node = [dep[0].lemma, dep[0].upos]
-                to_node = [dep[2].lemma, dep[2].upos]
-                edge = dep[1]
-                if from_node[0] not in vocab_dict:
-                    vocab_dict[from_node[0]] = len(vocab_dict)
-                    vocab_file.write(json.dumps({from_node[0]: vocab_dict[from_node[0]]}))
-                    vocab_file.write('\n')
-                if to_node[0] not in vocab_dict:
-                    vocab_dict[to_node[0]] = len(vocab_dict)
-                    vocab_file.write(json.dumps({to_node[0]: vocab_dict[to_node[0]]}))
-                    vocab_file.write('\n')
+        for s in ud:
+            for dep in s:
+                from_node = [dep["sender"]["lemma"], dep["sender"]["upos"]]
+                to_node = [dep["receiver"]["lemma"], dep["receiver"]["upos"]]
+                edge = dep["edge"]
+                if vocab_dict is not None:
+                    if from_node[0] not in vocab_dict:
+                        vocab_dict[from_node[0]] = len(vocab_dict)
+                        vocab_file.write(json.dumps({from_node[0]: vocab_dict[from_node[0]]}))
+                        vocab_file.write('\n')
+                    if to_node[0] not in vocab_dict:
+                        vocab_dict[to_node[0]] = len(vocab_dict)
+                        vocab_file.write(json.dumps({to_node[0]: vocab_dict[to_node[0]]}))
+                        vocab_file.write('\n')
 
-                if from_node[1] not in pos_dict:
-                    pos_dict[from_node[1]] = len(pos_dict)
-                    pos_file.write(json.dumps({from_node[1]: pos_dict[from_node[1]]}))
-                    pos_file.write('\n')
-                if to_node[1] not in pos_dict:
-                    pos_dict[to_node[1]] = len(pos_dict)
-                    pos_file.write(json.dumps({to_node[1]: pos_dict[to_node[1]]}))
-                    pos_file.write('\n')
+                if pos_dict is not None:
+                    if from_node[1] not in pos_dict:
+                        pos_dict[from_node[1]] = len(pos_dict)
+                        pos_file.write(json.dumps({from_node[1]: pos_dict[from_node[1]]}))
+                        pos_file.write('\n')
+                    if to_node[1] not in pos_dict:
+                        pos_dict[to_node[1]] = len(pos_dict)
+                        pos_file.write(json.dumps({to_node[1]: pos_dict[to_node[1]]}))
+                        pos_file.write('\n')
 
-                if edge not in dependency_dict:
-                    dependency_dict[edge] = len(dependency_dict)
-                    dependency_file.write(json.dumps({edge: dependency_dict[edge]}))
-                    dependency_file.write('\n')
+                if dependency_dict is not None:
+                    if edge not in dependency_dict:
+                        dependency_dict[edge] = len(dependency_dict)
+                        dependency_file.write(json.dumps({edge: dependency_dict[edge]}))
+                        dependency_file.write('\n')
 
                 if wo_index:
-                    from_node_features = [vocab_dict[from_node[0]], pos_dict[from_node[1]]]
-                    to_node_features = [vocab_dict[to_node[0]], pos_dict[to_node[1]]]
+                    if vocab_dict is not None and pos_dict is not None:
+                        from_node_features = [vocab_dict[from_node[0]], pos_dict[from_node[1]]]
+                        to_node_features = [vocab_dict[to_node[0]], pos_dict[to_node[1]]]
+                    else:
+                        from_node_features = from_node
+                        to_node_features = to_node
                 else:
-                    from_node_features = [vocab_dict[from_node[0]], pos_dict[from_node[1]], int(dep[0].index)]
-                    to_node_features = [vocab_dict[to_node[0]], pos_dict[to_node[1]], int(dep[2].index)]
+                    if vocab_dict is not None and pos_dict is not None:
+                        from_node_features = [vocab_dict[from_node[0]], pos_dict[from_node[1]], int(dep["sender"]["index"])]
+                        to_node_features = [vocab_dict[to_node[0]], pos_dict[to_node[1]], int(dep["receiver"]["index"])]
+                    else:
+                        from_node_features = from_node
+                        to_node_features = to_node
 
-                feature_appender(article_nodes, article_edges, article_senders, article_receivers,
-                                 from_node_features, to_node_features, [dependency_dict[edge]])
+                if dependency_dict is not None:
+                    feature_appender(article_nodes, article_edges, article_senders, article_receivers,
+                                     from_node_features, to_node_features, [dependency_dict[edge]])
+                else:
+                    feature_appender(article_nodes, article_edges, article_senders, article_receivers,
+                                     from_node_features, to_node_features, [edge])
 
                 feature_value = 1.0 if id in best_ids else 0.0
                 summary_from_node_features = from_node_features + [feature_value]
                 summary_to_node_features = to_node_features + [feature_value]
-                edge_features = [dependency_dict[edge], feature_value]
+                if dependency_dict is not None:
+                    edge_features = [dependency_dict[edge], feature_value]
+                else:
+                    edge_features = [edge, feature_value]
                 feature_appender(summary_nodes, summary_edges, summary_senders, summary_receivers,
                                  summary_from_node_features, summary_to_node_features, edge_features, is_summary=True)
 
@@ -143,9 +160,9 @@ def main():
     results to build the graphs.
     """
     # Initialize
-    if not os.path.exists("/home/kinga-gemes/stanfordnlp_resources/en_ewt_models"):
+    """if not os.path.exists("/home/kinga-gemes/stanfordnlp_resources/en_ewt_models"):
         stanfordnlp.download('en')
-    nlp = stanfordnlp.Pipeline()
+    nlp = stanfordnlp.Pipeline()"""
 
     dep_vocab = {}
     word_vocab = {}
@@ -159,14 +176,13 @@ def main():
     pos = open('./data/pos_vocab0.jsonl', 'w')
 
     # Process and save
-    with open('./data/cnn_dm_i4.jsonl') as cnn_dm:
+    with open('./data/cnn_dm_i4_processed.jsonl') as cnn_dm:
         line = cnn_dm.readline().strip()
         i = 0
         while line is not None and line != '':
             m = json.loads(line)
-            sentences = [nlp(sentence) for sentence in m['sentences']]
-            article_dict, summary_dict = article_graph_builder(sentences, m["best_ids"], dep_vocab, deps, word_vocab,
-                                                               word, pos_vocab, pos)
+            sentences = m['sentences_ud']  # [nlp(sentence) for sentence in m['sentences']]
+            article_dict, summary_dict = article_graph_builder(sentences, m["best_ids"])
 
             sent_json.write(json.dumps(article_dict))
             high_json.write(json.dumps(summary_dict))
@@ -183,6 +199,7 @@ def main():
     high_s_json.close()
     deps.close()
     word.close()
+    pos.close()
 
     with open('./data/dep_vocab0.json', 'w') as dep_json:
         dep_json.write(json.dumps(dep_vocab))
@@ -190,8 +207,8 @@ def main():
     with open('./data/word_vocab0.json', 'w') as word_json:
         word_json.write(json.dumps(word_vocab))
 
-    with open('./data/pos_vocab0.json', 'w') as word_json:
-        word_json.write(json.dumps(pos_vocab))
+    with open('./data/pos_vocab0.json', 'w') as pos_json:
+        pos_json.write(json.dumps(pos_vocab))
 
 
 if __name__ == '__main__':
