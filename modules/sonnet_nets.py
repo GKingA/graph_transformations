@@ -15,8 +15,7 @@ class ActivatedLSTM(snt.AbstractModule):
         self.activation_function = activation_funcion
 
     def _build(self, inputs, steps=10):
-        for _ in range(steps):
-            output, self.state = self.lstm(inputs, self.state)
+        output, self.state = self.lstm(inputs, self.state)
         return self.activation_function(output)
 
 

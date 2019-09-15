@@ -192,13 +192,13 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
 
 if __name__ == '__main__':
     tf.reset_default_graph()
-    num_processing_steps = 10
+    num_processing_steps = 1
+
+    epochs_ = 10000
+    batch_size_ = 8
 
     # encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
     graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
-
-    epochs_ = 10000
-    batch_size_ = 32
 
     training_steps = int(len(open('./data/sentences_train2.jsonl').read().split('\n')) / batch_size_)
     validation_steps = int(len(open('./data/sentences_test2.jsonl').read().split('\n')) / batch_size_)

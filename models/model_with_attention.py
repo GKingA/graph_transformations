@@ -115,7 +115,8 @@ class GraphAttention(snt.AbstractModule):
         :return: Sequential sonnet model
         """
         return snt.Sequential([
-            sonnet_nets.ActivatedLSTM(hidden_size=HIDDEN_SIZE, activation_funcion=self.edge_layer_activation),
+            #sonnet_nets.ActivatedLSTM(hidden_size=HIDDEN_SIZE, activation_funcion=self.edge_layer_activation),
+            sonnet_nets.ActivatedLinear(HIDDEN_SIZE, self.edge_layer_activation),
             sonnet_nets.ActivatedLinear(int(HIDDEN_SIZE / 2), self.edge_layer_activation),
             sonnet_nets.ActivatedLinear(int(HIDDEN_SIZE / 4), self.edge_layer_activation)
         ])
@@ -126,7 +127,8 @@ class GraphAttention(snt.AbstractModule):
         :return: Sequential sonnet model
         """
         return snt.Sequential([
-            sonnet_nets.ActivatedLSTM(hidden_size=HIDDEN_SIZE, activation_funcion=self.node_layer_activation),
+            #sonnet_nets.ActivatedLSTM(hidden_size=HIDDEN_SIZE, activation_funcion=self.node_layer_activation),
+            sonnet_nets.ActivatedLinear(HIDDEN_SIZE, self.node_layer_activation),
             sonnet_nets.ActivatedLinear(int(HIDDEN_SIZE / 2), self.node_layer_activation),
             sonnet_nets.ActivatedLinear(int(HIDDEN_SIZE / 4), self.node_layer_activation)
         ])
