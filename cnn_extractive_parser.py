@@ -154,29 +154,37 @@ def article_graph_builder(uds, best_ids, dependency_dict=None, dependency_file=N
     return article_data_dict, summary_data_dict
 
 
-def main():
+def main(processed_file, sentence_jsonl, highlight_jsonl, dependency_jsonl, words_jsonl, pos_jsonl,
+         dependency_json, words_json, pos_json):
     """
-    The main function. It loads the stanfornlp pipeline and processes the lines in the input path with it and uses these
-    results to build the graphs.
+    The main function. It uses the already processed lines in the input path and uses them to build the graphs.
+    :param processed_file: The file containing a json dict in each line with sentences_ud and best_ids keys
+    :param sentence_jsonl: The jsonl file to save the article graphs into.
+    :param highlight_jsonl: The jsonl file to save the summary graphs into.
+    :param dependency_jsonl: The jsonl file to save the dependency dictionary into.
+                             It is used as a backup in case the dependency_json could not be saved.
+    :param words_jsonl: The jsonl file to save the word dictionary into.
+                        It is used as a backup in case the words_json could not be saved.
+    :param pos_jsonl: The jsonl file to save the part-of-speech dictionary into.
+                      It is used as a backup in case the pos_json could not be saved.
+    :param dependency_json: The json file to save the dependency dictionary into.
+    :param words_json: The json file to save the word dictionary into.
+    :param pos_json: The json file to save the part-of-speech dictionary into.
     """
     # Initialize
-    """if not os.path.exists("/home/kinga-gemes/stanfordnlp_resources/en_ewt_models"):
-        stanfordnlp.download('en')
-    nlp = stanfordnlp.Pipeline()"""
 
     dep_vocab = {}
     word_vocab = {}
     pos_vocab = {}
 
-    sent_json = open('./data/sentences0.jsonl', 'w')
-    high_json = open('./data/highlights0.jsonl', 'w')
-    high_s_json = open('./data/highlight_sentences0.jsonl', 'w')
-    deps = open('./data/dep_vocab0.jsonl', 'w')
-    word = open('./data/word_vocab0.jsonl', 'w')
-    pos = open('./data/pos_vocab0.jsonl', 'w')
+    sent_json = open(sentence_jsonl, 'w')
+    high_json = open(highlight_jsonl, 'w')
+    deps = open(dependency_jsonl, 'w')
+    word = open(words_jsonl, 'w')
+    pos = open(pos_jsonl, 'w')
 
     # Process and save
-    with open('./data/cnn_dm_i4_processed.jsonl') as cnn_dm:
+    with open(processed_file) as cnn_dm:
         line = cnn_dm.readline().strip()
         i = 0
         while line is not None and line != '':
@@ -189,27 +197,27 @@ def main():
 
             high_json.write('\n')
             sent_json.write('\n')
-            high_s_json.write('\n')
             line = cnn_dm.readline().strip()
             i += 1
             print("{} extractive article processed".format(i))
 
     sent_json.close()
     high_json.close()
-    high_s_json.close()
     deps.close()
     word.close()
     pos.close()
 
-    with open('./data/dep_vocab0.json', 'w') as dep_json:
+    with open(dependency_json, 'w') as dep_json:
         dep_json.write(json.dumps(dep_vocab))
 
-    with open('./data/word_vocab0.json', 'w') as word_json:
+    with open(words_json, 'w') as word_json:
         word_json.write(json.dumps(word_vocab))
 
-    with open('./data/pos_vocab0.json', 'w') as pos_json:
+    with open(pos_json, 'w') as pos_json:
         pos_json.write(json.dumps(pos_vocab))
 
 
 if __name__ == '__main__':
-    main()
+    main('./data/cnn_dm_i4_processed.jsonl', './data/sentences0.jsonl', './data/highlights0.jsonl',
+         './data/dep_vocab0.jsonl', './data/word_vocab0.jsonl', './data/pos_vocab0.jsonl',
+         './data/dep_vocab0.json', './data/word_vocab0.json', './data/pos_vocab0.json')
