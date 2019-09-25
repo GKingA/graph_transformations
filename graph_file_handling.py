@@ -74,14 +74,14 @@ def generate_graph(file_path, batch_size, keep_features, existence_as_vector=Tru
         while True:
             line = json_file.readline().strip()
             while len(graph_dicts) != batch_size:
+                if line == "" or line is None:
+                    json_file = open(file_path)
+                    line = json_file.readline().strip()
                 json_dict = json.loads(line)
                 json_dict = process_line(json_dict, keep_features, existence_as_vector)
                 is_valid_graph(json_dict)
                 graph_dicts.append(json_dict)
                 line = json_file.readline().strip()
-                if line == "" or line is None:
-                    json_file = open(file_path)
-                    line = json_file.readline().strip()
             graphs_tuple = utils_np.data_dicts_to_graphs_tuple(graph_dicts)
             graph_dicts = []
             yield graphs_tuple
@@ -126,15 +126,15 @@ def save_predicted_graphs(path, inputs_train, output_train, inputs_test, output_
     outputs_test_dict = utils_np.graphs_tuple_to_data_dicts(output_test)
     with open(path, 'w') as output:
         for (in_, out_) in zip(inputs_train_dict, outputs_train_dict):
-            out_dict = {"nodes": [[float(i[0]), int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
-                        "edges": [[float(i[0]), int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
+            out_dict = {"nodes": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
+                        "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
                         "globals": [float(g) for g in in_["globals"]],
                         "senders": in_["senders"].tolist(),
                         "receivers": in_["receivers"].tolist()}
             print(json.dumps(out_dict), file=output)
         for (in_, out_) in zip(inputs_test_dict, outputs_test_dict):
-            out_dict = {"nodes": [[float(i[0]), int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
-                        "edges": [[float(i[0]), int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
+            out_dict = {"nodes": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
+                        "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
                         "globals": [float(g) for g in in_["globals"]],
                         "senders": in_["senders"].tolist(),
                         "receivers": in_["receivers"].tolist()}
