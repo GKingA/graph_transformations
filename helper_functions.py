@@ -82,6 +82,8 @@ def visualize_original_graph(graph_dict, file_name, use_edges=True):
     """
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
     plt.figure(1, figsize=(25, 25))
+    mapping0 = {i: n[0] for i, n in enumerate(graph["nodes"])}
+    graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
     nx.draw_networkx(graphs_nx[0])
-    plt.show()
     plt.savefig(file_name)
+    plt.show()
