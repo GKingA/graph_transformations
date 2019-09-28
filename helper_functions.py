@@ -48,31 +48,40 @@ def print_graphs_tuple(graphs_tuple):
     print("n_edge:\n{}".format(graphs_tuple.n_edge))
 
 
-def visualize_graph(graph_dict):
+def visualize_graph(graph_dict, file_name, use_edges=True):
     """
     Creates a visualization of the given graph using only its 1 valued nodes and edges
     :param graph_dict: An instance of a graph dictionary
+    :param file_name: The path to save the image
+    :param use_edges: Whether to take into account the value of the edges, or just the value of the nodes
     """
     graph = {"edges": [], "senders": [], "receivers": [],
              "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] == 1.], "globals": [1.0]}
     print(graph["nodes"])
     for edge, sender, receiver in zip(graph_dict["edges"], graph_dict["senders"], graph_dict["receivers"]):
-        if edge[-1] == 1. and graph_dict["nodes"][sender][-1] == 1. and graph_dict["nodes"][receiver][-1] == 1.:
+        if (edge[-1] == 1. or not use_edges) \
+                and graph_dict["nodes"][sender][-1] == 1. and graph_dict["nodes"][receiver][-1] == 1.:
             graph["edges"].append(edge[:-1])
             graph["senders"].append(graph["nodes"].index(graph_dict["nodes"][sender][:-1]))
             graph["receivers"].append(graph["nodes"].index(graph_dict["nodes"][receiver][:-1]))
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph]))
     plt.figure(1, figsize=(25, 25))
+    mapping0 = {i: n[0] for i, n in enumerate(graph["nodes"])}
+    graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
     nx.draw_networkx(graphs_nx[0])
+    plt.savefig(file_name)
     plt.show()
 
 
-def visualize_original_graph(graph_dict):
+def visualize_original_graph(graph_dict, file_name, use_edges=True):
     """
     Creates a visualization of the given graph
     :param graph_dict: An instance of a graph dictionary
+    :param file_name: The path to save the image
+    :param use_edges: This parameter is not used, only exist so it has the same format as the visualize_graph function
     """
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
     plt.figure(1, figsize=(25, 25))
     nx.draw_networkx(graphs_nx[0])
     plt.show()
+    plt.savefig(file_name)

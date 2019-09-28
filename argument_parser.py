@@ -40,6 +40,7 @@ parser = argparse.ArgumentParser(usage='\npython3 main.py preprocess\n'
                                        '--file_path FILE_PATH\n'
                                        '[--line LINE]\n'
                                        '[--save_image SAVE_IMAGE]\n'
+                                       '[--use_edges]\n'
                                        '[--all_displayed, --all]'
                                  )
 parser.add_argument("mode", choices=["preprocess", "train", "test", "visualize"])
@@ -93,9 +94,11 @@ parser.add_argument("--use_gpu", default=0, type=int, choices=[-1, 0, 1],
                     help="Used in train and test mode. Sets which GPU to use. "
                          "If there is no GPU available, please set it to -1.")
 
-# Arguments in train mode
+# Arguments in train and visualize mode
 parser.add_argument("--use_edges", action='store_true', default=False,
-                    help="Used in train mode. This parameter sets the edge usage to true.")
+                    help="Used in train and visualize mode. This parameter sets the edge usage to true.")
+
+# Arguments in train mode
 parser.add_argument("--epoch", default=10, type=int,
                     help="Used in train mode. This parameter determines the number of epochs.")
 parser.add_argument("--batch_size", default=8, type=int,

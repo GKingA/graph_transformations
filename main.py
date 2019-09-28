@@ -55,9 +55,36 @@ def preprocess(models_dir, processors, extractive, input_file, article_file, sum
     train_test_split(summary_file, output_train_files[1], output_test_files[1], ratio)
 
 
+def visualize(file_path, line_number, save_image, all_displayed, use_edges):
+    import json
+    if all_displayed:
+        from graph_transformations.helper_functions import visualize_original_graph as visualize_graph
+    else:
+        from graph_transformations.helper_functions import visualize_graph
+
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
+        raise FileNotFoundError("The input file is not found. {} not found".format(file_path))
+    if line_number < 0:
+        raise ValueError("The given line number ({}) is not valid.".format(line_number))
+
+    with open(file_path) as graph_file:
+        i = 0
+        line = graph_file.readline()
+        while i != line_number:
+            try:
+                line = graph_file.readline()
+            except IOError:
+                raise ValueError("The given line number ({}) is not valid.".format(line_number))
+            i += 1
+        graph_dict = json.loads(line)
+        visualize_graph(graph_dict, save_image, use_edges)
+
+
 if __name__ == "__main__":
     args = parser.parse_args()
     if args.mode == "preprocess":
         preprocess(args.models_dir, args.processors, args.extractive, args.input_file,
                    args.article_file, args.summary_file, args.output_train_files,
                    args.output_test_files, args.train_test_split)
+    elif args.mode == "visualize":
+        visualize(args.file_path, args.line, args.save_image, args.all_displayed, args.use_edges)
