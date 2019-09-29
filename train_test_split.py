@@ -47,7 +47,7 @@ def test_split(input_path, output_path):
     """
     Testing whether the split was correct.
     :param input_path: The path for the file containing the input graphs.
-    :param output_path: The path for the file containing the input graphs.
+    :param output_path: The path for the file containing the output graphs.
     """
     print(input_path)
     with open(input_path) as input_file:
@@ -78,8 +78,8 @@ def test_split(input_path, output_path):
 
 
 if __name__ == "__main__":
-    train_test_split("./data/sentences0.jsonl", "./data/sentences_train2.jsonl", "./data/sentences_test2.jsonl", 80)
-    train_test_split("./data/highlights0.jsonl", "./data/highlight_sentences_train2.jsonl",
-                     "./data/highlight_sentences_test2.jsonl", 80)
-    test_split("./data/sentences_train2.jsonl", "./data/highlight_sentences_train2.jsonl")
-    test_split("./data/sentences_test2.jsonl", "./data/highlight_sentences_test2.jsonl")
+    train_test_split("./data/sentences0.jsonl", "./data/sentences_train0.jsonl", "./data/sentences_test0.jsonl", 80)
+    train_test_split("./data/highlights0.jsonl", "./data/highlight_sentences_train0.jsonl",
+                     "./data/highlight_sentences_test0.jsonl", 80)
+    test_split("./data/sentences_train0.jsonl", "./data/highlight_sentences_train0.jsonl")
+    test_split("./data/sentences_test0.jsonl", "./data/highlight_sentences_test0.jsonl")
