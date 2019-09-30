@@ -107,7 +107,7 @@ def compute_accuracy_ratio(target, output, is_categorical=False):
     return corr_ / all_, solved / len(target)
 
 
-def compute_one_tp_tn_fp_fn(results, key, value, expected, calculated):
+def compute_one_tp_tn_fp_fn(results, key, value, expected, calculated, print_steps=False):
     """
     Calculates the True Positive, True Negative, False Positive and False Negative values for the given label.
     :param results: Dictionary to contain the calculated values. This will be updated.
@@ -115,33 +115,38 @@ def compute_one_tp_tn_fp_fn(results, key, value, expected, calculated):
     :param value: The value of the label
     :param expected: The expected values in the graph
     :param calculated: The calculated values in the graph
+    :param print_steps: Whether to print each batch's report
     """
     res = {key: {}}
     res[key]["tp"] = len([i for i, j in zip(expected, calculated) if i == value and i == j])
     res[key]["tn"] = len([i for i, j in zip(expected, calculated) if i != value and i == j])
     res[key]["fp"] = len([i for i, j in zip(expected, calculated) if i == value and i != j])
     res[key]["fn"] = len([i for i, j in zip(expected, calculated) if i != value and i != j])
-    f_score = compute_precision_recall_f1(res)
-    print("{}\t{}\t{}\t{}".format(key, f_score[key]["precision"], f_score[key]["recall"], f_score[key]["f1"]))
+    if print_steps:
+        f_score = compute_precision_recall_f1(res)
+        print("{}\t{}\t{}\t{}".format(key, f_score[key]["precision"], f_score[key]["recall"], f_score[key]["f1"]))
     for key2 in results[key]:
         results[key][key2] += res[key][key2]
 
 
-def compute_tp_tn_fp_fn(target, output, types):
+def compute_tp_tn_fp_fn(target, output, types, print_steps=False):
     """
     Calculates the True Positive, True Negative, False Positive and False Negative values in the batch.
     :param target: The expected values in the graph
     :param output: The calculated values in the graph
     :param types: The labels in the graph. (eq. edges0 means the edges with value 0)
+    :param print_steps: Whether to print each batch's report
     """
     results = {type_: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for type_ in types}
     tdds = utils_np.graphs_tuple_to_data_dicts(target)
     odds = utils_np.graphs_tuple_to_data_dicts(output)
     for td, od in zip(tdds, odds):
-        print("\tprecision\trecall\tf1")
+        if print_steps:
+            print("\tprecision\trecall\tf1")
         for type_ in types:
             compute_one_tp_tn_fp_fn(results, type_, int(type_[-1]),
-                                    np.argmax(td[type_[:-1]], axis=-1), np.argmax(od[type_[:-1]], axis=-1))
+                                    np.argmax(td[type_[:-1]], axis=-1), np.argmax(od[type_[:-1]], axis=-1),
+                                    print_steps)
     return results
 
 

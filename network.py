@@ -1,6 +1,7 @@
 from graph_nets import utils_tf
 from graph_nets.demos.models import EncodeProcessDecode
 import tensorflow as tf
+import os
 
 from graph_transformations.models.model_with_attention import GraphAttention
 from graph_transformations.graph_losses import softmax_loss, softmax_loss_on_nodes
@@ -71,9 +72,104 @@ def train_model(model, epochs, inputs_train, targets_train, inputs_test, targets
                               test_values["inputs"], test_values["outputs"][-1])
 
 
+def run_session(sess, inputs, input_ph, outputs, steps_per_epoch,
+                use_edges=None, targets=None, target_ph=None, optimize=None, loss=None, print_steps=None,
+                output_save_path=None):
+    """
+    Runs training, testing or prediction in session
+    :param sess: The tensorflow session for running the training testing or prediction.
+    :param inputs: The generator of the inputs
+    :param input_ph: Placeholders for the inputs
+    :param outputs: The outputs of the network
+    :param steps_per_epoch: The amount of batches to iterate through in a single epoch
+    :param use_edges: Whether or not to train/test on the edges as well as the nodes
+    :param targets: The generator of the target outputs
+    :param target_ph: Placeholders for the targets
+    :param optimize: Function for optimizing the network
+    :param loss: Loss function
+    :param print_steps: Whether to print each batch's report
+    :param output_save_path: The path where the final output graphs shall be saved
+    :return: The function returns the current loss, if it could be calculated
+    """
+    losses = []
+    corrects = []
+    solved = []
+
+    types = ["edges0", "edges1", "nodes0", "nodes1"] if use_edges else ["nodes0", "nodes1"]
+    tp_tn_fp_fn = {type_: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for type_ in types}
+
+    step = 0
+    sess_dict = {"inputs": input_ph, "outputs": outputs}
+    mode = "Predict"
+    iterator = inputs
+    if optimize is not None:
+        mode = "Train"
+        sess_dict = {
+            "optimize": optimize,
+            "inputs": input_ph,
+            "targets": target_ph,
+            "loss": loss,
+            "outputs": outputs
+        }
+        iterator = zip(inputs, targets)
+    elif targets is not None:
+        mode = "Test"
+        sess_dict = {
+            "inputs": input_ph,
+            "targets": target_ph,
+            "loss": loss,
+            "outputs": outputs
+        }
+        iterator = zip(inputs, targets)
+
+    for batch in iterator:
+        if len(batch) == 2:
+            feed_dict = {input_ph: batch[0], target_ph: batch[1]}
+        else:
+            feed_dict = {input_ph: batch}
+
+        values = sess.run(sess_dict, feed_dict=feed_dict)
+
+        if output_save_path is not None:
+            save_predicted_graphs(output_save_path, values["inputs"], values["outputs"][-1])
+
+        if targets is not None:
+            correct, solved_ = compute_accuracy(values["targets"], values["outputs"][-1]) if use_edges \
+                else compute_accuracy_on_nodes(values["targets"], values["outputs"][-1])
+
+            if print_steps:
+                print("{} loss: {}\tCorrect train parts: {}\tCorrectly solved train graphs: {}".format(mode,
+                      values["loss"], correct, solved))
+
+            add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(values["targets"], values["outputs"][-1], types,
+                                                             print_steps))
+
+            losses.append(values["loss"])
+            corrects.append(correct)
+            solved.append(solved_)
+        if step < steps_per_epoch:
+            step += 1
+        else:
+            break
+
+    if targets is not None:
+        current_loss = sum(losses) / steps_per_epoch
+        print("{} loss: {}\tCorrect test parts: {}\tCorrectly solved test graphs: {}".format(mode,
+              current_loss, sum(corrects) / steps_per_epoch, sum(solved) / steps_per_epoch))
+
+        report = compute_precision_recall_f1(tp_tn_fp_fn)
+        print("{} report\n\t\tprecision\trecall\tf1".format(mode))
+        for key in report:
+            print("{}\t{}\t{}\t{}".format(key, report[key]["precision"], report[key]["recall"],
+                                          report[key]["f1"]))
+        return current_loss
+    return None
+
+
 def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps_per_epoch,
                     inputs_train_file, outputs_train_file,
-                    inputs_test_file, outputs_test_file, output_save_path, use_edges=True):
+                    inputs_test_file, outputs_test_file, output_save_path, save_model_path,
+                    use_edges=True, device='/device:GPU:0', print_steps=False, early_stopping=True):
     """
     Trains the model given as the parameter using a data generator
     :param model: The model to train
@@ -86,8 +182,12 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
     :param inputs_test_file: The path of the input file used for testing
     :param outputs_test_file: The path of the target file used for testing
     :param output_save_path: The path where the final output graphs shall be saved
+    :param save_model_path: Where to save the trained model
     :param use_edges: Whether or not to train on the edges as well as the nodes
-    :return:
+    :param device: Which device to use. GPU:0 is the default.
+    :param print_steps: Whether to print each batch's report
+    :param early_stopping: Whether to use Early stopping
+    :return: The trained model
     """
 
     inputs_train = generate_graph(inputs_train_file, batch_size, keep_features=True)
@@ -113,88 +213,116 @@ def train_generator(model, epochs, batch_size, steps_per_epoch, validation_steps
     learning_rate = 1e-3
     optimizer = tf.train.AdamOptimizer(learning_rate)
     optimize = optimizer.minimize(loss_train)
+    saver = tf.train.Saver()
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        last_loss = 1000.0
-        types = ["edges0", "edges1", "nodes0", "nodes1"] if use_edges else ["nodes0", "nodes1"]
-        for iteration in range(1, epochs + 1):
+    with tf.device(device):
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            last_loss = -1.0
 
-            if iteration > 3:
-                print("{}th epoch".format(iteration))
-            elif iteration == 3:
-                print("3rd epoch")
-            elif iteration == 2:
-                print("2nd epoch")
-            elif iteration == 1:
-                print("1st epoch")
+            for iteration in range(1, epochs + 1):
 
-            tp_tn_fp_fn = {type_: {"tp": 0, "tn": 0, "fp": 0, "fn": 0} for type_ in types}
+                if iteration > 3:
+                    print("{}th epoch".format(iteration))
+                elif iteration == 3:
+                    print("3rd epoch")
+                elif iteration == 2:
+                    print("2nd epoch")
+                elif iteration == 1:
+                    print("1st epoch")
 
-            losses = []
-            corrects = []
-            solved = []
-            train_values = None
-            test_values = None
-            step = 0
-            for input_batch, output_batch in zip(inputs_train, targets_train):
-                feed_dict = {input_train_ph: input_batch, target_train_ph: output_batch}
-                train_values = sess.run({
-                    "optimize": optimize,
-                    "inputs": input_train_ph,
-                    "targets": target_train_ph,
-                    "loss": loss_train,
-                    "outputs": output_train
-                }, feed_dict=feed_dict)
-                correct_train, solved_train = compute_accuracy(train_values["targets"], train_values["outputs"][-1]) \
-                    if use_edges else compute_accuracy_on_nodes(train_values["targets"], train_values["outputs"][-1])
-                print("Train loss: {}\tCorrect train parts: {}\tCorrectly solved train graphs: {}".format(
-                    train_values["loss"], correct_train, solved_train))
-                if step < steps_per_epoch:
-                    step += 1
-                else:
-                    step = 0
-                    break
-            for input_batch, output_batch in zip(inputs_test, targets_test):
-                feed_dict = {input_test_ph: input_batch, target_test_ph: output_batch}
-                test_values = sess.run({
-                    "inputs": input_test_ph,
-                    "targets": target_test_ph,
-                    "loss": loss_test,
-                    "outputs": output_test,
-                }, feed_dict=feed_dict)
-                correct_test, solved_test = compute_accuracy(test_values["targets"], test_values["outputs"][-1]) \
-                    if use_edges else compute_accuracy_on_nodes(test_values["targets"], test_values["outputs"][-1])
-                add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(test_values["targets"], test_values["outputs"][-1],
-                                                                 types))
-                losses.append(test_values["loss"])
-                corrects.append(correct_test)
-                solved.append(solved_test)
-                if step < validation_steps_per_epoch:
-                    step += 1
-                else:
-                    break
-            current_loss = sum(losses)/validation_steps_per_epoch
-            print("Test loss: {}\tCorrect test parts: {}\tCorrectly solved test graphs: {}".format(
-                current_loss, sum(corrects)/validation_steps_per_epoch,
-                sum(solved)/validation_steps_per_epoch))
-            if current_loss < last_loss:
-                last_loss = current_loss
-            else:
-                break
-            report = compute_precision_recall_f1(tp_tn_fp_fn)
-            print("\t\tprecision\trecall\tf1")
-            for key in report:
-                print("{}\t{}\t{}\t{}".format(key, report[key]["precision"], report[key]["recall"], report[key]["f1"]))
-        save_predicted_graphs(output_save_path, train_values["inputs"], train_values["outputs"][-1],
-                              test_values["inputs"], test_values["outputs"][-1])
+                run_session(sess, inputs_train, input_train_ph, output_train, steps_per_epoch, use_edges=use_edges,
+                            targets=targets_train, target_ph=target_train_ph, optimize=optimize, loss=loss_train,
+                            print_steps=print_steps)
+
+                current_loss = run_session(sess, inputs_test, input_test_ph, output_test, validation_steps_per_epoch,
+                                           use_edges=use_edges, targets=targets_test, target_ph=target_test_ph,
+                                           loss=loss_test, print_steps=print_steps)
+
+                if early_stopping:
+                    if current_loss < last_loss or last_loss <= 0.0:
+                        last_loss = current_loss
+                    else:
+                        break
+            if output_save_path is not None:
+                train_len = int(len(open(inputs_train_file).read().split('\n')) / batch_size_)
+                test_len = int(len(open(inputs_test_file).read().split('\n')) / batch_size_)
+                run_session(sess, inputs_train, input_train_ph, output_train, train_len,
+                            output_save_path=output_save_path)
+                run_session(sess, inputs_test, input_test_ph, output_test, test_len, output_save_path=output_save_path)
+            save_path = saver.save(sess, "{}.ckpt".format(save_model_path))
+            print("Model saved in path: %s" % save_path)
+    return model
+
+
+def predict(model, checkpoint, data, batch_size, output_save_path, device='/device:GPU:0'):
+    """
+    Use the model to predict the output with given input
+    :param model: The model used for prediction
+    :param checkpoint: The path to the previously saved checkpoint file
+    :param data: The path of the input file used for prediction
+    :param batch_size: The size of a batch
+    :param output_save_path: The path where the final output graphs shall be saved
+    :param device: Which device to use. GPU:0 is the default.
+    """
+    inputs = generate_graph(data, batch_size, keep_features=True)
+
+    input_ph = generate_placeholder(data, batch_size, keep_features=True)
+
+    outputs = model(input_ph, 1)
+    saver = tf.train.Saver()
+    with tf.device(device):
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            checkpoint = checkpoint if checkpoint.endswith(".ckpt") else "{}.ckpt".format(checkpoint)
+            saver.restore(sess, checkpoint)
+            steps = int(len(open(data).read().split('\n')) / batch_size_)
+            run_session(sess, inputs, input_ph, outputs, steps, output_save_path=output_save_path)
+
+
+def test(model, checkpoint, input_data, target_data, batch_size, output_save_path, use_edges=True,
+         device='/device:GPU:0', print_steps=False):
+    """
+    Tests the model at the checkpoint.
+    :param model: The model to test
+    :param checkpoint: The path to the previously saved checkpoint file
+    :param input_data: The path of the input file used for testing
+    :param target_data: The path of the target file used for testing
+    :param batch_size: The size of a test batch
+    :param output_save_path: The path where the final output graphs shall be saved
+    :param use_edges: Whether or not to test on the edges as well as the nodes
+    :param device: Which device to use. GPU:0 is the default.
+    :param print_steps: Whether to print each batch's report
+    """
+    inputs = generate_graph(input_data, batch_size, keep_features=True)
+    targets = generate_graph(target_data, batch_size, keep_features=False)
+
+    input_ph = generate_placeholder(input_data, batch_size, keep_features=True)
+    target_ph = generate_placeholder(target_data, batch_size, keep_features=False)
+
+    outputs = model(input_ph, 1)
+
+    loss = softmax_loss(target_ph, outputs) if use_edges else \
+        softmax_loss_on_nodes(target_ph, outputs)
+    loss = loss[-1]
+
+    saver = tf.train.Saver()
+    with tf.device(device):
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            checkpoint = checkpoint if checkpoint.endswith(".ckpt") else "{}.ckpt".format(checkpoint)
+            saver.restore(sess, checkpoint)
+            steps = int(len(open(input_data).read().split('\n')) / batch_size_)
+            run_session(sess, inputs, input_ph, outputs, steps, targets=targets, target_ph=target_ph, loss=loss,
+                        use_edges=use_edges, print_steps=print_steps, output_save_path=output_save_path)
 
 
 if __name__ == '__main__':
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
     tf.reset_default_graph()
     num_processing_steps = 1
 
-    epochs_ = 10000
+    epochs_ = 2
     batch_size_ = 8
 
     # encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
@@ -208,5 +336,15 @@ if __name__ == '__main__':
                     './data/highlight_sentences_train2.jsonl',
                     './data/sentences_test2.jsonl',
                     './data/highlight_sentences_test2.jsonl',
-                    './data/predictions.jsonl')
+                    './data/predictions.jsonl',
+                    './chkpt/model_checkpoint',
+                    use_edges=False,
+                    device='/device:CPU:0')
+
+    predict(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl', batch_size_,
+            "./data/tmp/pred.jsonl", device='/device:CPU:0')
+
+    test(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl',
+         './data/highlight_sentences_test2.jsonl', batch_size_, "./data/tmp/pred2.jsonl", use_edges=False,
+         device='/device:CPU:0')
 

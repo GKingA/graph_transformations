@@ -31,6 +31,7 @@ parser = argparse.ArgumentParser(usage='\npython3 main.py preprocess\n'
                                        'python3 main.py test\n'
                                        '[--model {EncodeProcessDecode/epd/EPD, GraphAttention/ga/GA}]\n'
                                        '[--model_path MODEL_PATH]\n'
+                                       '[--batch_size BATCH_SIZE]\n'
                                        '[--save_prediction SAVE_PREDICTION, --prediction_file SAVE_PREDICTION]\n'
                                        '[--valid_files VALID_FILES VALID_FILES, '
                                        '--validation_files VALID_FILES VALID_FILES]\n'
@@ -81,7 +82,7 @@ parser.add_argument("--train_test_split", default=0.8, type=float,
 parser.add_argument("--model", default="GraphAttention",
                     choices=["EncodeProcessDecode", "epd", "EPD", "GraphAttention", "ga", "GA"],
                     help="Used in train mode. This parameter sets the model structure for training.")
-parser.add_argument("--model_path", default="", type=str,
+parser.add_argument("--model_path", default="model_checkpoint", type=str,
                     help="Used in train and test mode. In train mode this is the path to save the model.\n"
                          "In test mode this path is used to load the model")
 parser.add_argument("--save_prediction", "--prediction_file", default="./data/predictions.jsonl", type=str,
@@ -93,6 +94,8 @@ parser.add_argument("--valid_files", "--validation_files", nargs=2,
 parser.add_argument("--use_gpu", default=0, type=int, choices=[-1, 0, 1],
                     help="Used in train and test mode. Sets which GPU to use. "
                          "If there is no GPU available, please set it to -1.")
+parser.add_argument("--batch_size", default=8, type=int,
+                    help="Used in train mode. This parameter determines the size of the batch.")
 
 # Arguments in train and visualize mode
 parser.add_argument("--use_edges", action='store_true', default=False,
@@ -101,8 +104,6 @@ parser.add_argument("--use_edges", action='store_true', default=False,
 # Arguments in train mode
 parser.add_argument("--epoch", default=10, type=int,
                     help="Used in train mode. This parameter determines the number of epochs.")
-parser.add_argument("--batch_size", default=8, type=int,
-                    help="Used in train mode. This parameter determines the size of the batch.")
 parser.add_argument("--training_steps_per_epoch", "--train_steps_per_epoch", default=None, type=int,
                     help="Used in train mode. If not set, the default is to use the whole training set in each epoch.")
 parser.add_argument("--validation_steps_per_epoch", "--valid_steps_per_epoch", default=None, type=int,

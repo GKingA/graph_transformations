@@ -55,7 +55,41 @@ def preprocess(models_dir, processors, extractive, input_file, article_file, sum
     train_test_split(summary_file, output_train_files[1], output_test_files[1], ratio)
 
 
+def train(model, model_path, save_prediction, valid_files, use_gpu, use_edges, epoch, batch_size,
+          training_steps_per_epoch, validation_steps_per_epoch, train_files):
+    import tensorflow as tf
+    from graph_transformations.network import train_generator
+
+    if model in ["GraphAttention", "ga", "GA"]:
+        from graph_transformations.models.model_with_attention import GraphAttention as Model
+    else:
+        from graph_nets.demos.models import EncodeProcessDecode as Model
+
+    if use_gpu != -1:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(use_gpu)
+        device = "/device:GPU:{}".format(use_gpu)
+    else:
+        device = "/device:CPU:0"
+
+    tf.reset_default_graph()
+    model_to_train = Model(edge_output_size=2, node_output_size=2, global_output_size=1)
+    train_generator(model=model_to_train, epochs=epoch, batch_size=batch_size, steps_per_epoch=training_steps_per_epoch,
+                    validation_steps_per_epoch=validation_steps_per_epoch, inputs_train_file=train_files[0],
+                    outputs_train_file=train_files[1], inputs_test_file=valid_files[0],
+                    outputs_test_file=valid_files[1], output_save_path=save_prediction, save_model_path=model_path,
+                    use_edges=use_edges, device=device)
+
+
 def visualize(file_path, line_number, save_image, all_displayed, use_edges):
+    """
+    Visualize the line_numberth graph in a file
+    :param file_path: The file containing one graph dict each line.
+    :param line_number: The number which tells us which line to visualize
+    :param save_image: The path where the image will be saved
+    :param all_displayed: Whether to display every node and edge and not just the ones with 1 value
+    :param use_edges: Whether to take the connectivity into account while displaying.
+    :return: None
+    """
     import json
     if all_displayed:
         from graph_transformations.helper_functions import visualize_original_graph as visualize_graph
@@ -86,5 +120,9 @@ if __name__ == "__main__":
         preprocess(args.models_dir, args.processors, args.extractive, args.input_file,
                    args.article_file, args.summary_file, args.output_train_files,
                    args.output_test_files, args.train_test_split)
+    elif args.mode == "train":
+        train(args.model, args.model_path, args.save_prediction, args.valid_files, args.use_gpu, args.use_edges,
+              args.epoch, args.batch_size, args.training_steps_per_epoch, args.validation_steps_per_epoch,
+              args.train_files)
     elif args.mode == "visualize":
         visualize(args.file_path, args.line, args.save_image, args.all_displayed, args.use_edges)

@@ -2,6 +2,7 @@ import numpy as np
 from graph_nets import utils_tf, utils_np
 from graph_transformations.helper_functions import is_valid_graph
 import json
+import os
 
 
 def process_line(json_dict, keep_features, existence_as_vector):
@@ -111,28 +112,18 @@ def get_first_batch_graph_dict(path, batch_size, keep_features, existence_as_vec
     return list_of_dicts
 
 
-def save_predicted_graphs(path, inputs_train, output_train, inputs_test, output_test):
+def save_predicted_graphs(path, inputs, outputs):
     """
     Saves the predicted graphs to a jsonl file
     :param path: The path where the file shall be saved
-    :param inputs_train: Training input graphs
-    :param output_train: Training output graphs
-    :param inputs_test: Test input graphs
-    :param output_test: Test output graphs
+    :param inputs: Training input graphs
+    :param outputs: Training output graphs
     """
-    inputs_train_dict = utils_np.graphs_tuple_to_data_dicts(inputs_train)
-    outputs_train_dict = utils_np.graphs_tuple_to_data_dicts(output_train)
-    inputs_test_dict = utils_np.graphs_tuple_to_data_dicts(inputs_test)
-    outputs_test_dict = utils_np.graphs_tuple_to_data_dicts(output_test)
-    with open(path, 'w') as output:
-        for (in_, out_) in zip(inputs_train_dict, outputs_train_dict):
-            out_dict = {"nodes": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
-                        "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
-                        "globals": [float(g) for g in in_["globals"]],
-                        "senders": in_["senders"].tolist(),
-                        "receivers": in_["receivers"].tolist()}
-            print(json.dumps(out_dict), file=output)
-        for (in_, out_) in zip(inputs_test_dict, outputs_test_dict):
+    inputs_dict = utils_np.graphs_tuple_to_data_dicts(inputs)
+    outputs_dict = utils_np.graphs_tuple_to_data_dicts(outputs)
+    mode = 'a' if os.path.exists(path) else 'w'
+    with open(path, mode) as output:
+        for (in_, out_) in zip(inputs_dict, outputs_dict):
             out_dict = {"nodes": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
                         "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
                         "globals": [float(g) for g in in_["globals"]],
