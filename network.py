@@ -138,8 +138,8 @@ def run_session(sess, inputs, input_ph, outputs, steps_per_epoch,
                 else compute_accuracy_on_nodes(values["targets"], values["outputs"][-1])
 
             if print_steps:
-                print("{} loss: {}\tCorrect train parts: {}\tCorrectly solved train graphs: {}".format(mode,
-                      values["loss"], correct, solved))
+                print("{mode} loss: {0}\tCorrect {mode} parts: {1}\tCorrectly solved {mode} graphs: {2}".format(
+                      values["loss"], correct, solved, mode=mode))
 
             add_tp_tn_fp_fn(tp_tn_fp_fn, compute_tp_tn_fp_fn(values["targets"], values["outputs"][-1], types,
                                                              print_steps))
@@ -332,19 +332,20 @@ if __name__ == '__main__':
     validation_steps = int(len(open('./data/sentences_test2.jsonl').read().split('\n')) / batch_size_)
 
     train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
-                    './data/sentences_train2.jsonl',
-                    './data/highlight_sentences_train2.jsonl',
-                    './data/sentences_test2.jsonl',
-                    './data/highlight_sentences_test2.jsonl',
-                    './data/predictions.jsonl',
+                    './data/sentences_train3.jsonl',
+                    './data/highlight_sentences_train3.jsonl',
+                    './data/sentences_test3.jsonl',
+                    './data/highlight_sentences_test3.jsonl',
+                    './data/predictions3.jsonl',
                     './chkpt/model_checkpoint',
                     use_edges=False,
+                    print_steps=True,
                     device='/device:CPU:0')
 
-    predict(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl', batch_size_,
+    """predict(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl', batch_size_,
             "./data/tmp/pred.jsonl", device='/device:CPU:0')
 
     test(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl',
          './data/highlight_sentences_test2.jsonl', batch_size_, "./data/tmp/pred2.jsonl", use_edges=False,
-         device='/device:CPU:0')
+         device='/device:CPU:0')"""
 
