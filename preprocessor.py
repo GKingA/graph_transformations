@@ -31,13 +31,15 @@ def process_line(nlp, line, parsed_file):
     """
     m = json.loads(line)
     if "highlights" in m:
-        if m['sentences'] != '' and m['highlights'] != '':
+        if m['sentences'] != '' and m['sentences'] != [] and m['sentences'] != [''] and m['highlights'] != '':
             m["highlights_ud"] = dependency_parse(nlp, m['highlights'])
             m["sentences_ud"] = dependency_parse(nlp, m['sentences'])
     else:
-        if m['sentences'] != '':
+        if m['sentences'] != '' and m['sentences'] != [] and m['sentences'] != ['']:
             m["sentences_ud"] = dependency_parse(nlp, m['sentences'])
-    parsed_file.write(json.dumps(m))
+    if "sentences_ud" in m:
+        parsed_file.write(json.dumps(m))
+        parsed_file.write('\n')
 
 
 def main(nlp, file_path, final_file_path, from_line=0, to_line=None):
