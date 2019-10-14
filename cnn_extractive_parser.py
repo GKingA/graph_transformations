@@ -22,25 +22,23 @@ def feature_appender(nodes, edges, senders, receivers, from_node_features, to_no
             nodes.append(to_node_features)
     else:
         nodes_wo_last_feature = [n[:-1] for n in nodes]
-        if from_node_features[-1] == 1.0:
-            if from_node_features[:-1] not in nodes_wo_last_feature:
-                nodes.append(from_node_features)
-            else:
+        if from_node_features[:-1] not in nodes_wo_last_feature:
+            nodes.append(from_node_features)
+            nodes_wo_last_feature.append(from_node_features[:-1])
+        else:
+            if from_node_features[-1] == 1.0:
                 index = nodes_wo_last_feature.index(from_node_features[:-1])
                 nodes[index] = from_node_features
-            if to_node_features[:-1] not in nodes_wo_last_feature:
-                nodes.append(to_node_features)
-            else:
-                index = nodes_wo_last_feature.index(to_node_features[:-1])
-                nodes[index] = to_node_features
-        else:
-            if from_node_features[:-1] not in nodes_wo_last_feature:
-                nodes.append(from_node_features)
             else:
                 index = nodes_wo_last_feature.index(from_node_features[:-1])
                 from_node_features = nodes[index]
-            if to_node_features[:-1] not in nodes_wo_last_feature:
-                nodes.append(to_node_features)
+        if to_node_features[:-1] not in nodes_wo_last_feature:
+            nodes.append(to_node_features)
+            nodes_wo_last_feature.append(to_node_features[:-1])
+        else:
+            if to_node_features[-1] == 1.0:
+                index = nodes_wo_last_feature.index(to_node_features[:-1])
+                nodes[index] = to_node_features
             else:
                 index = nodes_wo_last_feature.index(to_node_features[:-1])
                 to_node_features = nodes[index]
