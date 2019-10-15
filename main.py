@@ -3,7 +3,7 @@ import os
 from graph_transformations.argument_parser import parser
 
 
-def preprocess(models_dir, processors, extractive, input_file, article_file, summary_file,
+def preprocess(models_dir, processors, extractive, cnn_dm_file, article_file, summary_file,
                output_train_files, output_test_files, split_ratio):
     """
     This function goes through the entire preprocessing pipeline resulting in files ready to be used as the input of
@@ -11,7 +11,7 @@ def preprocess(models_dir, processors, extractive, input_file, article_file, sum
     :param models_dir: The path to the stanfordnlp directory.
     :param processors: List of parsers to use. Options: tokenize, mwt, pos, lemma, depparse.
     :param extractive: Whether to make extractive summary or not. If true,the input file should contain the best ids.
-    :param input_file: This file should contain the articles and the summaries in a jsonl format.
+    :param cnn_dm_file: This file should contain the articles and the summaries in a jsonl format.
     :param article_file: This file will contain every article graph.
     :param summary_file: This file will contain every summary graph.
     :param output_train_files: The paths to save the training files.
@@ -37,12 +37,12 @@ def preprocess(models_dir, processors, extractive, input_file, article_file, sum
     if len(incorrect) != 0:
         raise ValueError("The following processor values are incorrect: {}".format(incorrect))
 
-    if not os.path.exists(input_file):
-        raise FileNotFoundError("The input file is not found. {} not found".format(input_file))
+    if not os.path.exists(cnn_dm_file):
+        raise FileNotFoundError("The input file is not found. {} not found".format(cnn_dm_file))
 
     pipeline = stanfordnlp.Pipeline(models_dir=models_dir, processors=processors)
-    processed_file = "{}_processed.jsonl".format(os.path.splitext(input_file)[0])
-    stanford_preprocess(pipeline, input_file, processed_file)
+    processed_file = "{}_processed.jsonl".format(os.path.splitext(cnn_dm_file)[0])
+    stanford_preprocess(pipeline, cnn_dm_file, processed_file)
 
     dependency_file = "dep.jsonl"
     word_file = "words.jsonl"
@@ -200,9 +200,9 @@ def visualize(file_path, line_number, save_image, all_displayed, use_edges):
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
+    args = parser.parse_args(["visualize", "--file_path", "./data/highlight_sentences_train3.jsonl", "--line", "0", "--save_image", "article_graph.png", "--all"])
     if args.mode == "preprocess":
-        preprocess(args.models_dir, args.processors, args.extractive, args.input_file,
+        preprocess(args.models_dir, args.processors, args.extractive, args.cnn_dm_file,
                    args.article_file, args.summary_file, args.output_train_files,
                    args.output_test_files, args.train_test_split)
     elif args.mode == "train":

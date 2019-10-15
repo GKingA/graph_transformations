@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(usage='\npython3 main.py preprocess\n'
                                        '[--models_dir MODELS_DIR]\n'
                                        '[--processors PROCESSORS PROCESSORS...]\n'
                                        '[--extractive]\n'
-                                       '[--input_file INPUT_FILE]\n'
+                                       '[--cnn_dm_file CNN_DM_FILE]\n'
                                        '[--article_file ARTICLE_FILE]\n'
                                        '[--summary_file SUMMARY_FILE]\n'
                                        '[--output_train_files OUTPUT_TRAIN_FILES OUTPUT_TRAIN_FILES]\n'
@@ -69,7 +69,7 @@ parser.add_argument("--processors", nargs='*', default=DEFAULT_PROCESSORS,
 parser.add_argument("--extractive", action="store_true", default=False,
                     help="Used in preprocess mode. "
                          "If set the summary will only contain exact sentences from the original text.")
-parser.add_argument("--input_file", default="./data/cnn_dm_i4.jsonl", type=str,
+parser.add_argument("--cnn_dm_file", default="./data/cnn_dm_i4.jsonl", type=str,
                     help="Used in preprocess mode. "
                          "The file should contain the articles and the summaries in a jsonl format.")
 parser.add_argument("--article_file", default="./data/article.jsonl", type=str,

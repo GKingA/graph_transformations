@@ -1,6 +1,7 @@
 from graph_nets import graphs, utils_np
 import matplotlib.pyplot as plt
 import networkx as nx
+import os
 
 
 def is_valid_graph(json_dict):
@@ -70,6 +71,7 @@ def visualize_graph(graph_dict, file_name, use_edges=True):
     graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
     nx.draw_networkx(graphs_nx[0])
     plt.savefig(file_name)
+    nx.drawing.nx_pydot.write_dot(graphs_nx[0], "{}.dot".format(os.path.splitext(file_name)[0]))
     plt.show()
 
 
@@ -82,8 +84,9 @@ def visualize_original_graph(graph_dict, file_name, use_edges=True):
     """
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
     plt.figure(1, figsize=(25, 25))
-    mapping0 = {i: n[0] for i, n in enumerate(graph["nodes"])}
+    mapping0 = {i: n[0] for i, n in enumerate(graph_dict["nodes"])}
     graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
     nx.draw_networkx(graphs_nx[0])
     plt.savefig(file_name)
+    nx.drawing.nx_pydot.write_dot(graphs_nx[0], "{}.dot".format(os.path.splitext(file_name)[0]))
     plt.show()
