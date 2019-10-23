@@ -165,19 +165,23 @@ def predict(model, model_path, save_prediction, input_file, use_gpu, batch_size)
             output_save_path=save_prediction, device=device)
 
 
-def visualize(file_path, line_number, save_image, all_displayed, use_edges):
+def visualize(file_path, line_number, save_image, all_displayed, color_ones, use_edges):
     """
     Visualize the line_numberth graph in a file
     :param file_path: The file containing one graph dict each line.
     :param line_number: The number which tells us which line to visualize
     :param save_image: The path where the image will be saved
     :param all_displayed: Whether to display every node and edge and not just the ones with 1 value
+    :param color_ones: Whether to use color coding to represent node labels
     :param use_edges: Whether to take the connectivity into account while displaying.
     :return: None
     """
     import json
     if all_displayed:
-        from graph_transformations.helper_functions import visualize_original_graph as visualize_graph
+        if color_ones:
+            from graph_transformations.helper_functions import visualize_graph_with_colors as visualize_graph
+        else:
+            from graph_transformations.helper_functions import visualize_original_graph as visualize_graph
     else:
         from graph_transformations.helper_functions import visualize_graph
 
@@ -200,7 +204,7 @@ def visualize(file_path, line_number, save_image, all_displayed, use_edges):
 
 
 if __name__ == "__main__":
-    args = parser.parse_args(["visualize", "--file_path", "./data/highlight_sentences_train3.jsonl", "--line", "0", "--save_image", "article_graph.png", "--all"])
+    args = parser.parse_args()
     if args.mode == "preprocess":
         preprocess(args.models_dir, args.processors, args.extractive, args.cnn_dm_file,
                    args.article_file, args.summary_file, args.output_train_files,
@@ -215,4 +219,4 @@ if __name__ == "__main__":
     elif args.mode == "predict":
         predict(args.model, args.model_path, args.save_prediction, args.input_file, args.use_gpu, args.batch_size)
     elif args.mode == "visualize":
-        visualize(args.file_path, args.line, args.save_image, args.all_displayed, args.use_edges)
+        visualize(args.file_path, args.line, args.save_image, args.all_displayed, args.color_ones, args.use_edges)

@@ -58,7 +58,6 @@ def visualize_graph(graph_dict, file_name, use_edges=True):
     """
     graph = {"edges": [], "senders": [], "receivers": [],
              "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] == 1.], "globals": [1.0]}
-    print(graph["nodes"])
     for edge, sender, receiver in zip(graph_dict["edges"], graph_dict["senders"], graph_dict["receivers"]):
         if (edge[-1] == 1. or not use_edges) \
                 and graph_dict["nodes"][sender][-1] == 1. and graph_dict["nodes"][receiver][-1] == 1.:
@@ -67,9 +66,9 @@ def visualize_graph(graph_dict, file_name, use_edges=True):
             graph["receivers"].append(graph["nodes"].index(graph_dict["nodes"][receiver][:-1]))
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph]))
     plt.figure(1, figsize=(25, 25))
-    mapping0 = {i: n[0] for i, n in enumerate(graph["nodes"])}
+    mapping0 = {i: "; ".join([str(n[0]), str(n[1])]) for i, n in enumerate(graph_dict["nodes"])}
     graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
-    nx.draw_networkx(graphs_nx[0])
+    nx.draw_networkx(graphs_nx[0], node_color='blue')
     plt.savefig(file_name)
     nx.drawing.nx_pydot.write_dot(graphs_nx[0], "{}.dot".format(os.path.splitext(file_name)[0]))
     plt.show()
@@ -84,9 +83,33 @@ def visualize_original_graph(graph_dict, file_name, use_edges=True):
     """
     graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
     plt.figure(1, figsize=(25, 25))
-    mapping0 = {i: n[0] for i, n in enumerate(graph_dict["nodes"])}
+    mapping0 = {i: "; ".join([str(n[0]), str(n[1])]) for i, n in enumerate(graph_dict["nodes"])}
     graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
-    nx.draw_networkx(graphs_nx[0])
+    nx.draw_networkx(graphs_nx[0], node_color='red')
+    plt.savefig(file_name)
+    nx.drawing.nx_pydot.write_dot(graphs_nx[0], "{}.dot".format(os.path.splitext(file_name)[0]))
+    plt.show()
+
+
+def visualize_graph_with_colors(graph_dict, file_name, use_edges=True):
+    """
+    Creates a visualization of the given graph with color coded labels
+    :param graph_dict: An instance of a graph dictionary
+    :param file_name: The path to save the image
+    :param use_edges: This parameter is not used, only exist so it has the same format as the visualize_graph function
+    :return:
+    """
+    graphs_nx = utils_np.graphs_tuple_to_networkxs(utils_np.data_dicts_to_graphs_tuple([graph_dict]))
+    color_map = []
+    for node in graph_dict["nodes"]:
+        if node[-1] == 1.0:
+            color_map.append('blue')
+        else:
+            color_map.append('red')
+    plt.figure(1, figsize=(25, 25))
+    mapping0 = {i: "; ".join([str(n[0]), str(n[1])]) for i, n in enumerate(graph_dict["nodes"])}
+    graphs_nx[0] = nx.relabel_nodes(graphs_nx[0], mapping0)
+    nx.draw_networkx(graphs_nx[0], node_color=color_map, with_labels=True)
     plt.savefig(file_name)
     nx.drawing.nx_pydot.write_dot(graphs_nx[0], "{}.dot".format(os.path.splitext(file_name)[0]))
     plt.show()

@@ -148,3 +148,6 @@ parser.add_argument("--save_image", default="graph.png", type=str,
 parser.add_argument("--all_displayed", "--all", action="store_true", default=False,
                     help="Used in visualize mode. If you use this config, the visualization will contain\n"
                          "all nodes and edges even if their value is 0.")
+parser.add_argument("--color_ones", "--color", action="store_true", default=False,
+                    help="Used in visualize mode. If you set it to true, and the all_displayed is also true, than the"
+                         "result will be color coded. Red is the nodes with label 0 and blue is for the nodes with 1.")
