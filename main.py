@@ -56,7 +56,7 @@ def preprocess(models_dir, processors, extractive, cnn_dm_file, article_file, su
 
 
 def train(model, model_path, save_prediction, valid_files, use_gpu, use_edges, epoch, batch_size,
-          training_steps_per_epoch, validation_steps_per_epoch, train_files, print_steps, early_stopping):
+          training_steps_per_epoch, validation_steps_per_epoch, train_files, print_steps, early_stopping, accurately):
     """
     Trains the model given as the parameter using a data generator
     :param model: The model to train
@@ -72,6 +72,7 @@ def train(model, model_path, save_prediction, valid_files, use_gpu, use_edges, e
     :param train_files: The paths of the files used for training
     :param print_steps: Whether to print each batch's report
     :param early_stopping: Whether to use Early stopping
+    :param accurately: Whether to save the scores or just whether the result was one or zero
     """
     import tensorflow as tf
     from graph_transformations.network import train_generator
@@ -97,10 +98,11 @@ def train(model, model_path, save_prediction, valid_files, use_gpu, use_edges, e
                     validation_steps_per_epoch=validation_steps_per_epoch, inputs_train_file=train_files[0],
                     outputs_train_file=train_files[1], inputs_test_file=valid_files[0],
                     outputs_test_file=valid_files[1], output_save_path=save_prediction, save_model_path=model_path,
-                    use_edges=use_edges, device=device, print_steps=print_steps, early_stopping=early_stopping)
+                    accurately=accurately, use_edges=use_edges, device=device, print_steps=print_steps,
+                    early_stopping=early_stopping)
 
 
-def test(model, model_path, save_prediction, valid_files, use_gpu, use_edges, batch_size, print_steps):
+def test(model, model_path, save_prediction, valid_files, use_gpu, use_edges, batch_size, print_steps, accurately):
     """
     Tests the model restored from model path with given test data
     :param model: The model to train
@@ -111,6 +113,7 @@ def test(model, model_path, save_prediction, valid_files, use_gpu, use_edges, ba
     :param use_edges: Whether or not to train on the edges as well as the nodes
     :param batch_size: The size of a batch
     :param print_steps: Whether to print each batch's report
+    :param accurately: Whether to save the scores or just whether the result was one or zero
     """
     import tensorflow as tf
     from graph_transformations.network import test
@@ -131,12 +134,13 @@ def test(model, model_path, save_prediction, valid_files, use_gpu, use_edges, ba
         device = "/device:CPU:0"
 
     tf.reset_default_graph()
-    test(model=model, checkpoint=model_path, input_data=valid_files[0], target_data=valid_files[1],
-         batch_size=batch_size, output_save_path=save_prediction, use_edges=use_edges,
+    model_to_test = Model(edge_output_size=2, node_output_size=2, global_output_size=1)
+    test(model=model_to_test, checkpoint=model_path, input_data=valid_files[0], target_data=valid_files[1],
+         batch_size=batch_size, output_save_path=save_prediction, accurately=accurately, use_edges=use_edges,
          device=device, print_steps=print_steps)
 
 
-def predict(model, model_path, save_prediction, input_file, use_gpu, batch_size):
+def predict(model, model_path, save_prediction, input_file, use_gpu, batch_size, accurately):
     """
     Predicts the output of the model restored from model path with given data
     :param model: The model to train
@@ -145,6 +149,7 @@ def predict(model, model_path, save_prediction, input_file, use_gpu, batch_size)
     :param input_file: The path of the input file used for prediction
     :param use_gpu: Which device to use
     :param batch_size: The size of a batch
+    :param accurately: Whether to save the scores or just whether the result was one or zero
     """
     import tensorflow as tf
     from graph_transformations.network import predict
@@ -161,8 +166,9 @@ def predict(model, model_path, save_prediction, input_file, use_gpu, batch_size)
         device = "/device:CPU:0"
 
     tf.reset_default_graph()
-    predict(model=model, checkpoint=model_path, data=input_file, batch_size=batch_size,
-            output_save_path=save_prediction, device=device)
+    model_to_predict = Model(edge_output_size=2, node_output_size=2, global_output_size=1)
+    predict(model=model_to_predict, checkpoint=model_path, data=input_file, batch_size=batch_size,
+            output_save_path=save_prediction, accurately=accurately, device=device)
 
 
 def visualize(file_path, line_number, save_image, all_displayed, color_ones, use_edges):
@@ -212,11 +218,12 @@ if __name__ == "__main__":
     elif args.mode == "train":
         train(args.model, args.model_path, args.save_prediction, args.valid_files, args.use_gpu, args.use_edges,
               args.epoch, args.batch_size, args.training_steps_per_epoch, args.validation_steps_per_epoch,
-              args.train_files, args.print_steps, not args.no_early_stopping)
+              args.train_files, args.print_steps, not args.no_early_stopping, args.accurately)
     elif args.mode == "test":
         test(args.model, args.model_path, args.save_prediction, args.valid_files, args.use_gpu, args.use_edges,
-             args.batch_size, args.print_steps)
+             args.batch_size, args.print_steps, args.accurately)
     elif args.mode == "predict":
-        predict(args.model, args.model_path, args.save_prediction, args.input_file, args.use_gpu, args.batch_size)
+        predict(args.model, args.model_path, args.save_prediction, args.input_file, args.use_gpu, args.batch_size,
+                args.accurately)
     elif args.mode == "visualize":
         visualize(args.file_path, args.line, args.save_image, args.all_displayed, args.color_ones, args.use_edges)

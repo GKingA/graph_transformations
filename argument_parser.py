@@ -104,6 +104,9 @@ parser.add_argument("--use_gpu", default=0, type=int, choices=[-1, 0, 1],
                          "If there is no GPU available, please set it to -1.")
 parser.add_argument("--batch_size", default=8, type=int,
                     help="Used in train, test and predict mode. This parameter determines the size of the batch.")
+parser.add_argument("--accurately", default=False, action='store_true',
+                    help="Used in train, test and predict mode. "
+                         "Whether to save the scores or just whether the result was one or zero")
 
 # Arguments in train and test mode
 parser.add_argument("--valid_files", "--validation_files", nargs=2,

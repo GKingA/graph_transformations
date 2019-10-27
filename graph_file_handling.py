@@ -112,21 +112,29 @@ def get_first_batch_graph_dict(path, batch_size, keep_features, existence_as_vec
     return list_of_dicts
 
 
-def save_predicted_graphs(path, inputs, outputs):
+def save_predicted_graphs(path, inputs, outputs, accurately=False):
     """
     Saves the predicted graphs to a jsonl file
     :param path: The path where the file shall be saved
     :param inputs: Training input graphs
     :param outputs: Training output graphs
+    :param accurately: Whether to save the scores or just whether the result was one or zero
     """
     inputs_dict = utils_np.graphs_tuple_to_data_dicts(inputs)
     outputs_dict = utils_np.graphs_tuple_to_data_dicts(outputs)
     mode = 'a' if os.path.exists(path) else 'w'
     with open(path, mode) as output:
         for (in_, out_) in zip(inputs_dict, outputs_dict):
-            out_dict = {"nodes": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
-                        "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
-                        "globals": [float(g) for g in in_["globals"]],
-                        "senders": in_["senders"].tolist(),
-                        "receivers": in_["receivers"].tolist()}
+            if not accurately:
+                out_dict = {"nodes": [[i.tolist(), int(np.argmax(o))] for (i, o) in zip(in_["nodes"], out_["nodes"])],
+                            "edges": [[i[0], int(np.argmax(o))] for (i, o) in zip(in_["edges"], out_["edges"])],
+                            "globals": [float(g) for g in in_["globals"]],
+                            "senders": in_["senders"].tolist(),
+                            "receivers": in_["receivers"].tolist()}
+            else:
+                out_dict = {"nodes": [[i.tolist(), o[1]] for (i, o) in zip(inputs_dict["nodes"], outputs_dict["nodes"])],
+                            "edges": [[i[0], o[1]] for (i, o) in zip(inputs_dict["edges"], outputs_dict["edges"])],
+                            "globals": [float(g) for g in inputs_dict["globals"]],
+                            "senders": inputs_dict["senders"].tolist(),
+                            "receivers": inputs_dict["receivers"].tolist()}
             print(json.dumps(out_dict), file=output)
