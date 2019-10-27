@@ -132,9 +132,9 @@ def save_predicted_graphs(path, inputs, outputs, accurately=False):
                             "senders": in_["senders"].tolist(),
                             "receivers": in_["receivers"].tolist()}
             else:
-                out_dict = {"nodes": [[i.tolist(), o[1]] for (i, o) in zip(inputs_dict["nodes"], outputs_dict["nodes"])],
-                            "edges": [[i[0], o[1]] for (i, o) in zip(inputs_dict["edges"], outputs_dict["edges"])],
-                            "globals": [float(g) for g in inputs_dict["globals"]],
-                            "senders": inputs_dict["senders"].tolist(),
-                            "receivers": inputs_dict["receivers"].tolist()}
+                out_dict = {"nodes": [[i.tolist(), o[1]] for (i, o) in zip(in_["nodes"], out_["nodes"])],
+                            "edges": [[i[0], o[1]] for (i, o) in zip(in_["edges"], out_["edges"])],
+                            "globals": [float(g) for g in in_["globals"]],
+                            "senders": in_["senders"].tolist(),
+                            "receivers": in_["receivers"].tolist()}
             print(json.dumps(out_dict), file=output)
