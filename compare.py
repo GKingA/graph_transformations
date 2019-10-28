@@ -24,49 +24,51 @@ def gensim_summarize(text):
     return summarizer._format_results(extracted_sentences, True)
 
 
-def graph_summarize(model, checkpoint, article, sentences, sentences_ud):
+def graph_summarize(summary_graph, sentences, sentences_ud):
     """
     Summarize one instance.
-    :param model: The model to use for prediction.
-    :param checkpoint: The path to the previously trained model parameters
-    :param article: The article graph to generate the prediction for
+    :param summary_graph: The previously predicted summary graph
     :param sentences: The sentences in the article
     :param sentences_ud: The separate ud graphs for each sentence
     :return: The sentences in the order of relevance
     """
     sentence_scores = {s: 0 for s in sentences}
-    summary_graph = predict_one_graph(model, checkpoint, article, device='/device:CPU:0')
     for sentence, sent in zip(sentences_ud, sentences):
         averager = 0
         for sentence_part in sentence:
             for connection in sentence_part:
-                if connection["sender"]["lemma"] is not None:
-                    sender_score = [i[1] for i in summary_graph["nodes"]
-                                    if i[0][0] == bytes(connection["sender"]["lemma"], encoding='utf-8')
-                                    and i[0][1] == bytes(connection["sender"]["upos"], encoding='utf-8')][0]
-                    if connection["sender"]["lemma"].lower() not in STOPWORDS:
+                if connection["sender"]["lemma"] is not None and connection["sender"]["lemma"].lower() not in STOPWORDS:
+                    sender_score_list = [i[1] for i in summary_graph["nodes"]
+                                         if i[0][0] == connection["sender"]["lemma"]
+                                         and i[0][1] == connection["sender"]["upos"]]
+                    for sender_score in sender_score_list:
                         sentence_scores[sent] += sender_score
                         averager += 1
-                if connection["receiver"]["lemma"] is not None:
-                    receiver_score = [i[1] for i in summary_graph["nodes"]
-                                      if i[0][0] == bytes(connection["receiver"]["lemma"], encoding='utf-8')
-                                      and i[0][1] == bytes(connection["receiver"]["upos"], encoding='utf-8')][0]
-                    if connection["receiver"]["lemma"].lower() not in STOPWORDS:
+                if connection["receiver"]["lemma"] is not None and connection["receiver"]["lemma"].lower() not in \
+                        STOPWORDS:
+                    receiver_score_list = [i[1] for i in summary_graph["nodes"]
+                                           if i[0][0] == connection["receiver"]["lemma"]
+                                           and i[0][1] == connection["receiver"]["upos"]]
+                    for receiver_score in receiver_score_list:
                         sentence_scores[sent] += receiver_score
                         averager += 1
         sentence_scores[sent] /= averager
     return sorted(sentence_scores.items(), key=lambda kv: kv[1], reverse=True)
 
 
-def main(jsonl_path, model, checkpoint_file, save_path):
+def main(jsonl_path, save_path, predictions=None, model=None, checkpoint_file=None):
     """
     The main functionality of the code
     :param jsonl_path: The path to the previously preprocessed sentences
+    :param save_path: The path to save the rougr scores and summaries
+    :param predictions: The file containing the predictions for every article from the file from jsonl_path
     :param model: The model used for the graph summary prediction
     :param checkpoint_file: The pretrained checkpoint file
-    :param save_path: The path to save the rougr scores and summaries
     :return: None
     """
+    pred_file = None
+    if predictions is not None:
+        pred_file = open(predictions)
     with open(save_path, "a") as result_file:
         with open(jsonl_path) as jsonl_file:
             line = jsonl_file.readline().strip()
@@ -76,12 +78,12 @@ def main(jsonl_path, model, checkpoint_file, save_path):
                 sentences_ud = json_line["sentences_ud"]
                 text = " ".join(sentences)
                 gensim_summary = gensim_summarize(text)
-                article_graph, _ = article_graph_builder(sentences_ud, json_line["best_ids"])
-                graph_summary = graph_summarize(model,
-                                                checkpoint_file,
-                                                article_graph,
-                                                sentences,
-                                                sentences_ud)
+                if pred_file is not None:
+                    summary_graph = json.loads(pred_file.readline())
+                else:
+                    article_graph, _ = article_graph_builder(sentences_ud, json_line["best_ids"])
+                    summary_graph = predict_one_graph(model, checkpoint_file, article_graph)
+                graph_summary = graph_summarize(summary_graph, sentences, sentences_ud)
                 number_of_sentences = len(json_line["best_ids"])
                 summary = " ".join(json_line["summary"])
 
@@ -105,6 +107,8 @@ def main(jsonl_path, model, checkpoint_file, save_path):
                           }
                 print(json.dumps(result), file=result_file)
                 line = jsonl_file.readline().strip()
+    if pred_file is not None:
+        pred_file.close()
 
 
 if __name__ == '__main__':
@@ -112,4 +116,5 @@ if __name__ == '__main__':
     graph_attention_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
     checkpoint = "./chkpt4/model_checkpoint"
     save_file = "./data/rouge.jsonl"
-    main(jsonl_file_path, graph_attention_model, checkpoint, save_file)
+    prediction_file = "./data/tmp/predict_chkpt4.jsonl"
+    main(jsonl_file_path, save_file, predictions=prediction_file)

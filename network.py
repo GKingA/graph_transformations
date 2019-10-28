@@ -306,8 +306,9 @@ def predict_one_graph(model, checkpoint, json_data, device='/device:GPU:0'):
             values = sess.run({"inputs": inputs, "outputs": outputs})
     inputs_dict = utils_np.graphs_tuple_to_data_dicts(values["inputs"])[0]
     outputs_dict = utils_np.graphs_tuple_to_data_dicts(values["outputs"][0])[0]
-    return {"nodes": [[i.tolist(), o[1]] for (i, o) in zip(inputs_dict["nodes"], outputs_dict["nodes"])],
-            "edges": [[i[0], o[1]] for (i, o) in zip(inputs_dict["edges"], outputs_dict["edges"])],
+    return {"nodes": [[[j.decode("utf-8") for j in i], o[1]] for (i, o) in
+                      zip(inputs_dict["nodes"], outputs_dict["nodes"])],
+            "edges": [[i[0].decode("utf-8"), o[1]] for (i, o) in zip(inputs_dict["edges"], outputs_dict["edges"])],
             "globals": [float(g) for g in inputs_dict["globals"]],
             "senders": inputs_dict["senders"].tolist(),
             "receivers": inputs_dict["receivers"].tolist()}
