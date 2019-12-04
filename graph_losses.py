@@ -34,11 +34,12 @@ def softmax_loss(target, outputs):
     :param outputs: List of output graphs
     :return: It returns the calculated loss
     """
-    class_weights = tf.constant([1.0, 2.0])
+    node_class_weights = tf.constant([1.0, 2.0])
+    edge_class_weights = tf.constant([1.0, 5.0])
     node_indices = tf.map_fn(lambda node: tf.argmax(node), target.nodes, dtype=tf.int64)
-    node_weights = tf.gather(class_weights, tf.cast(node_indices, tf.int64))
+    node_weights = tf.gather(node_class_weights, tf.cast(node_indices, tf.int64))
     edge_indices = tf.map_fn(lambda edge: tf.argmax(edge), target.edges, dtype=tf.int64)
-    edge_weights = tf.gather(class_weights, tf.cast(edge_indices, tf.int64))
+    edge_weights = tf.gather(edge_class_weights, tf.cast(edge_indices, tf.int64))
     loss_ = [softmax_cross_entropy(target.nodes, output.nodes, weights=node_weights) +
              softmax_cross_entropy(target.edges, output.edges, weights=edge_weights)
              for output in outputs]

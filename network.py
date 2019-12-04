@@ -1,9 +1,9 @@
-from graph_nets import utils_tf, utils_np
+from graph_nets import utils_tf, utils_np, modules
 from graph_nets.demos.models import EncodeProcessDecode
 import tensorflow as tf
 import os
 
-from graph_transformations.models.model_with_attention import GraphAttention
+from graph_transformations.models.model_with_attention import GraphAttention, SimpleGraphAttention
 from graph_transformations.graph_losses import softmax_loss, softmax_loss_on_nodes
 from graph_transformations.graph_file_handling import get_first_batch_graph_dict, generate_graph, \
                                                       save_predicted_graphs, process_line
@@ -361,25 +361,26 @@ if __name__ == '__main__':
     epochs_ = 2
     batch_size_ = 8
 
-    encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
+    #encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
     graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
 
-    training_steps = int(len(open('./data/sentences_train2.jsonl').read().split('\n')) / batch_size_)
-    validation_steps = int(len(open('./data/sentences_test2.jsonl').read().split('\n')) / batch_size_)
+    training_steps = 10
+    validation_steps = 5
 
-    """train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
+    train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
                     './data/sentences_train3.jsonl',
                     './data/highlight_sentences_train3.jsonl',
                     './data/sentences_test3.jsonl',
                     './data/highlight_sentences_test3.jsonl',
                     './data/predictions3.jsonl',
                     './chkpt/model_checkpoint',
-                    use_edges=False,
+                    accurately=True,
+                    use_edges=True,
                     print_steps=True,
-                    device='/device:CPU:0')"""
+                    device='/device:CPU:0')
 
-    predict(graph_dependent_model, './chkpt4/model_checkpoint', './data/sentences2.jsonl', batch_size_,
-            "./data/tmp/pred.jsonl", device='/device:CPU:0')
+    """predict(graph_dependent_model, './chkpt4/model_checkpoint', './data/sentences2.jsonl', batch_size_,
+            "./data/tmp/pred.jsonl", device='/device:CPU:0')"""
 
     """test(graph_dependent_model, './chkpt/model_checkpoint', './data/sentences_test2.jsonl',
          './data/highlight_sentences_test2.jsonl', batch_size_, "./data/tmp/pred2.jsonl", use_edges=False,
