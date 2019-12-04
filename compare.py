@@ -17,10 +17,8 @@ def gensim_summarize(text):
     """
     sentences = summarizer._clean_text_by_sentences(text)
     corpus = summarizer._build_corpus(sentences)
-
     most_important_docs = summarizer.summarize_corpus(corpus, ratio=1)
     extracted_sentences = summarizer._extract_important_sentences(sentences, corpus, most_important_docs, None)
-
     return summarizer._format_results(extracted_sentences, True)
 
 
