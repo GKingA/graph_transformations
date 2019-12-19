@@ -57,10 +57,10 @@ def visualize_graph(graph_dict, file_name, use_edges=True):
     :param use_edges: Whether to take into account the value of the edges, or just the value of the nodes
     """
     graph = {"edges": [], "senders": [], "receivers": [],
-             "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] == 1.], "globals": [1.0]}
+             "nodes": [node[:-1] for node in graph_dict["nodes"] if node[-1] >= 0.5], "globals": [1.0]}
     for edge, sender, receiver in zip(graph_dict["edges"], graph_dict["senders"], graph_dict["receivers"]):
         if (edge[-1] == 1. or not use_edges) \
-                and graph_dict["nodes"][sender][-1] == 1. and graph_dict["nodes"][receiver][-1] == 1.:
+                and graph_dict["nodes"][sender][-1] >= 0.5 and graph_dict["nodes"][receiver][-1] >= 0.5:
             graph["edges"].append(edge[:-1])
             graph["senders"].append(graph["nodes"].index(graph_dict["nodes"][sender][:-1]))
             graph["receivers"].append(graph["nodes"].index(graph_dict["nodes"][receiver][:-1]))

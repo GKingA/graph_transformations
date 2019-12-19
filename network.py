@@ -290,7 +290,7 @@ def predict_one_graph(model, checkpoint, json_data, device='/device:GPU:0'):
     Predicts one output for the one given input
     :param model: The model used for prediction
     :param checkpoint: The path to the previously saved checkpoint file
-    :param json_data:
+    :param json_data: The dictionary containing the information of one article
     :param device: Which device to use. GPU:0 is the default.
     :return: The scored ooutput
     """
@@ -358,16 +358,17 @@ if __name__ == '__main__':
     tf.reset_default_graph()
     num_processing_steps = 1
 
-    epochs_ = 2
+    epochs_ = 10
     batch_size_ = 8
 
     #encode_process_decode_model = EncodeProcessDecode(edge_output_size=2, node_output_size=2, global_output_size=1)
+    #graph_dependent_model = SimpleGraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
     graph_dependent_model = GraphAttention(edge_output_size=2, node_output_size=2, global_output_size=1)
 
-    training_steps = 10
-    validation_steps = 5
+    training_steps = 10000
+    validation_steps = 1000
 
-    train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
+    """train_generator(graph_dependent_model, epochs_, batch_size_, training_steps, validation_steps,
                     './data/sentences_train3.jsonl',
                     './data/highlight_sentences_train3.jsonl',
                     './data/sentences_test3.jsonl',
@@ -377,7 +378,7 @@ if __name__ == '__main__':
                     accurately=True,
                     use_edges=True,
                     print_steps=True,
-                    device='/device:CPU:0')
+                    device='/device:CPU:0')"""
 
     """predict(graph_dependent_model, './chkpt4/model_checkpoint', './data/sentences2.jsonl', batch_size_,
             "./data/tmp/pred.jsonl", device='/device:CPU:0')"""
